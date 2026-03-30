@@ -3,10 +3,10 @@ import { z } from 'zod'
 import { makeRefreshTokenUseCase } from '../../../useCases/factories/makeRefreshTokenUseCase'
 import type { Role } from '@prisma/client'
 
-const bodySchema = z.object({ refreshToken: z.string() })
+export const refreshTokenBodySchema = z.object({ refreshToken: z.string() })
 
 export async function refreshTokenController(request: FastifyRequest, reply: FastifyReply) {
-  const { refreshToken } = bodySchema.parse(request.body)
+  const { refreshToken } = refreshTokenBodySchema.parse(request.body)
   const useCase = makeRefreshTokenUseCase()
   const result = await useCase.execute({ refreshToken })
 

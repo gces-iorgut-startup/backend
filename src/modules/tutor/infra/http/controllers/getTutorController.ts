@@ -1,5 +1,8 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
 import { makeGetTutorUseCase } from '../../../useCases/factories/makeGetTutorUseCase'
+import { z } from 'zod'
+
+export const getTutorParamsSchema = z.object({ id: z.string().uuid() })
 
 export async function getTutorController(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
   const useCase = makeGetTutorUseCase()

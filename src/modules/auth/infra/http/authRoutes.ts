@@ -1,16 +1,41 @@
-import type { FastifyInstance } from 'fastify'
-import { createUserController } from './controllers/createUserController'
-import { authenticateController } from './controllers/authenticateController'
-import { refreshTokenController } from './controllers/refreshTokenController'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
+import { createUserController, createUserBodySchema } from './controllers/createUserController'
+import { authenticateController, authenticateBodySchema } from './controllers/authenticateController'
+import { refreshTokenController, refreshTokenBodySchema } from './controllers/refreshTokenController'
 import { logoutController } from './controllers/logoutController'
 import { verifyJwt } from '@shared/middleware/verify-jwt'
 
-export async function authRoutes(app: FastifyInstance) {
-  // Pública
-  app.post('/register', createUserController)
-  app.post('/login', authenticateController)
-  app.post('/refresh', refreshTokenController)
+export const authRoutes: FastifyPluginAsyncZod = async (app) => {
+  app.post('/register', {
+    schema: {
+      tags: ['Auth'],
+      summary: 'Criar uma nova conta (Dono ou Veterinário)',
+      body: createUserBodySchema,
+    },
+  }, createUserController)
 
-  // Protegida
-  app.delete('/logout', { preHandler: [verifyJwt] }, logoutController)
+  app.post('/login', {
+    schema: {
+      tags: ['Auth'],
+      summary: 'Autenticar com email e senha',
+      body: authenticateBodySchema,
+    },
+  }, authenticateController)
+
+  app.post('/refresh', {
+    schema: {
+      tags: ['Auth'],
+      summary: 'Renovar o token de acesso (Refresh Token)',
+      body: refreshTokenBodySchema,
+    },
+  }, refreshTokenController)
+
+  app.delete('/logout', {
+    preHandler: [verifyJwt],
+    schema: {
+      tags: ['Auth'],
+      summary: 'Encerrar sessão ativa',
+      security: [{ bearerAuth: [] }],
+    },
+  }, logoutController)
 }

@@ -1,15 +1,47 @@
-import type { FastifyInstance } from 'fastify'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { verifyJwt } from '@shared/middleware/verify-jwt'
-import { createPatientController } from './controllers/createPatientController'
-import { listPatientsController } from './controllers/listPatientsController'
-import { getPatientController } from './controllers/getPatientController'
-import { updatePatientController } from './controllers/updatePatientController'
+import { createPatientController, createPatientBodySchema } from './controllers/createPatientController'
+import { listPatientsController, listPatientsQuerySchema } from './controllers/listPatientsController'
+import { getPatientController, getPatientParamsSchema } from './controllers/getPatientController'
+import { updatePatientController, updatePatientBodySchema } from './controllers/updatePatientController'
 
-export async function patientRoutes(app: FastifyInstance) {
+export const patientRoutes: FastifyPluginAsyncZod = async (app) => {
   app.addHook('preHandler', verifyJwt)
 
-  app.post('/', createPatientController)
-  app.get('/', listPatientsController)
-  app.get('/:id', getPatientController)
-  app.put('/:id', updatePatientController)
+  app.post('/', {
+    schema: {
+      tags: ['Patients'],
+      summary: 'Cadastrar novo paciente (obrigatório tutorId)',
+      security: [{ bearerAuth: [] }],
+      body: createPatientBodySchema,
+    },
+  }, createPatientController)
+
+  app.get('/', {
+    schema: {
+      tags: ['Patients'],
+      summary: 'Listar pacientes com paginação e busca (busca por nome ou tutorId)',
+      security: [{ bearerAuth: [] }],
+      querystring: listPatientsQuerySchema,
+    },
+  }, listPatientsController)
+
+  app.get('/:id', {
+    schema: {
+      tags: ['Patients'],
+      summary: 'Buscar dados completos de um paciente pelo ID',
+      security: [{ bearerAuth: [] }],
+      params: getPatientParamsSchema,
+    },
+  }, getPatientController)
+
+  app.put('/:id', {
+    schema: {
+      tags: ['Patients'],
+      summary: 'Atualizar dados de um paciente',
+      security: [{ bearerAuth: [] }],
+      params: getPatientParamsSchema,
+      body: updatePatientBodySchema,
+    },
+  }, updatePatientController)
 }

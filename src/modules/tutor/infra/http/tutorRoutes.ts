@@ -1,15 +1,47 @@
-import type { FastifyInstance } from 'fastify'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { verifyJwt } from '@shared/middleware/verify-jwt'
-import { createTutorController } from './controllers/createTutorController'
-import { listTutorsController } from './controllers/listTutorsController'
-import { getTutorController } from './controllers/getTutorController'
-import { updateTutorController } from './controllers/updateTutorController'
+import { createTutorController, createTutorBodySchema } from './controllers/createTutorController'
+import { listTutorsController, listTutorsQuerySchema } from './controllers/listTutorsController'
+import { getTutorController, getTutorParamsSchema } from './controllers/getTutorController'
+import { updateTutorController, updateTutorBodySchema } from './controllers/updateTutorController'
 
-export async function tutorRoutes(app: FastifyInstance) {
+export const tutorRoutes: FastifyPluginAsyncZod = async (app) => {
   app.addHook('preHandler', verifyJwt)
 
-  app.post('/', createTutorController)
-  app.get('/', listTutorsController)
-  app.get('/:id', getTutorController)
-  app.put('/:id', updateTutorController)
+  app.post('/', {
+    schema: {
+      tags: ['Tutors'],
+      summary: 'Cadastrar um novo tutor',
+      security: [{ bearerAuth: [] }],
+      body: createTutorBodySchema,
+    },
+  }, createTutorController)
+
+  app.get('/', {
+    schema: {
+      tags: ['Tutors'],
+      summary: 'Listar tutores com busca e paginação',
+      security: [{ bearerAuth: [] }],
+      querystring: listTutorsQuerySchema,
+    },
+  }, listTutorsController)
+
+  app.get('/:id', {
+    schema: {
+      tags: ['Tutors'],
+      summary: 'Buscar um tutor específico',
+      security: [{ bearerAuth: [] }],
+      params: getTutorParamsSchema,
+    },
+  }, getTutorController)
+
+  app.put('/:id', {
+    schema: {
+      tags: ['Tutors'],
+      summary: 'Atualizar dados de um tutor',
+      security: [{ bearerAuth: [] }],
+      params: getTutorParamsSchema,
+      body: updateTutorBodySchema,
+    },
+  }, updateTutorController)
 }

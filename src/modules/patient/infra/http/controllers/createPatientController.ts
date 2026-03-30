@@ -2,7 +2,7 @@ import type { FastifyRequest, FastifyReply } from 'fastify'
 import { z } from 'zod'
 import { makeCreatePatientUseCase } from '../../../useCases/factories/makeCreatePatientUseCase'
 
-const bodySchema = z.object({
+export const createPatientBodySchema = z.object({
   name: z.string().min(1),
   tutorId: z.string().uuid(),
   species: z.string().min(1),
@@ -14,7 +14,7 @@ const bodySchema = z.object({
 })
 
 export async function createPatientController(request: FastifyRequest, reply: FastifyReply) {
-  const body = bodySchema.parse(request.body)
+  const body = createPatientBodySchema.parse(request.body)
   const useCase = makeCreatePatientUseCase()
   const patient = await useCase.execute(body)
   return reply.status(201).send({ patient })

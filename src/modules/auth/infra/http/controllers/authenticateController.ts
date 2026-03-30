@@ -3,13 +3,13 @@ import { z } from 'zod'
 import { makeAuthenticateUseCase } from '../../../useCases/factories/makeAuthenticateUseCase'
 import type { Role } from '@prisma/client'
 
-const bodySchema = z.object({
+export const authenticateBodySchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 })
 
 export async function authenticateController(request: FastifyRequest, reply: FastifyReply) {
-  const body = bodySchema.parse(request.body)
+  const body = authenticateBodySchema.parse(request.body)
   const useCase = makeAuthenticateUseCase()
   const result = await useCase.execute(body)
 
