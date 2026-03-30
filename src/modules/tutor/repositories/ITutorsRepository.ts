@@ -1,0 +1,34 @@
+import type { Tutor } from '@prisma/client'
+
+export type { Tutor }
+
+export interface CreateTutorDTO {
+  fullName: string
+  cpf: string
+  phone: string
+  email?: string
+  address?: string
+  insurance?: string
+}
+
+export interface UpdateTutorDTO {
+  fullName?: string
+  phone?: string
+  email?: string
+  address?: string
+  insurance?: string
+}
+
+export interface ListTutorsDTO {
+  search?: string
+  page?: number
+  perPage?: number
+}
+
+export interface ITutorsRepository {
+  create(data: CreateTutorDTO): Promise<Tutor>
+  findById(id: string): Promise<Tutor | null>
+  findByCpf(cpf: string): Promise<Tutor | null>
+  list(params: ListTutorsDTO): Promise<{ tutors: Tutor[]; total: number }>
+  update(id: string, data: UpdateTutorDTO): Promise<Tutor>
+}
