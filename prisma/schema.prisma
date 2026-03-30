@@ -28,10 +28,9 @@ model User {
 }
 
 enum Role {
-  ADMIN     // Administrador — acesso total (US03)
-  VET       // Médico Veterinário (US09, US10, US11)
-  ATTENDANT // Atendente/Recepcionista (US04, US07, US13)
-  TUTOR     // Tutor com acesso ao portal (US14, US15, US16)
+  OWNER  // Dono da clínica — acesso total (US02, US03)
+  VET    // Médico Veterinário (US09, US10, US11)
+  TUTOR  // Tutor — acesso exclusivo ao portal (US14, US15, US16)
 }
 
 model RefreshToken {
