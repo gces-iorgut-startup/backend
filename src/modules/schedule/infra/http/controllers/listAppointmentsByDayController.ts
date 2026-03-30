@@ -1,0 +1,15 @@
+import type { FastifyRequest, FastifyReply } from 'fastify'
+import { z } from 'zod'
+import { makeListAppointmentsByDayUseCase } from '../../../useCases/factories/makeListAppointmentsByDayUseCase'
+
+const querySchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use o formato YYYY-MM-DD'),
+  vetId: z.string().uuid().optional(),
+})
+
+export async function listAppointmentsByDayController(request: FastifyRequest, reply: FastifyReply) {
+  const query = querySchema.parse(request.query)
+  const useCase = makeListAppointmentsByDayUseCase()
+  const appointments = await useCase.execute(query)
+  return reply.status(200).send({ appointments })
+}
