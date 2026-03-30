@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: iougurt-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: iougurt
+      POSTGRES_PASSWORD: iougurt
+      POSTGRES_DB: iougurt
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U iougurt -d iougurt"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      target: dev
+    container_name: iougurt-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

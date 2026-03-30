@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+.DS_Store
+
+# Prisma
+prisma/migrations/*.lock
+
+# Logs
+*.log
+npm-debug.log*
+
+# Coverage
+coverage/

@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Auth & Users (US01) ──────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  avatarUrl    String?  @map("avatar_url")
+  role         Role     @default(VET)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  refreshTokens   RefreshToken[]
+  appointments    Appointment[]    @relation("vet_appointments")
+  clinicalRecords ClinicalRecord[]
+  tutorAccount    Tutor?
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN     // Administrador — acesso total (US03)
+  VET       // Médico Veterinário (US09, US10, US11)
+  ATTENDANT // Atendente/Recepcionista (US04, US07, US13)
+  TUTOR     // Tutor com acesso ao portal (US14, US15, US16)
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+// ── Tutors (US05, US14, US15, US16) ─────────────────
+
+model Tutor {
+  id        String   @id @default(uuid())
+  userId    String?  @unique @map("user_id") // Portal do Tutor (US14)
+  fullName  String   @map("full_name")
+  cpf       String   @unique
+  phone     String
+  email     String?
+  address   String?
+  insurance String?  // convênio (US05)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User?     @relation(fields: [userId], references: [id])
+  patients Patient[]
+
+  @@map("tutors")
+}
+
+// ── Patients (US04, US05) ────────────────────────────
+
+model Patient {
+  id        String    @id @default(uuid())
+  name      String
+  photoUrl  String?   @map("photo_url")
+  birthDate DateTime? @map("birth_date")
+  // peso removido: use WeightRecord para histórico; peso atual = último registro
+  microchip String?
+  allergies String?
+  species   String
+  breed     String?
+  tutorId   String    @map("tutor_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  tutor           Tutor            @relation(fields: [tutorId], references: [id])
+  appointments    Appointment[]
+  clinicalRecords ClinicalRecord[]
+  vaccinations    Vaccination[]    // US11 — aba "Controle Imunológico"
+  examFiles       ExamFile[]       // US12 — exames anexados
+
+  @@map("patients")
+}
+
+// ── Schedule (US06, US07, US08) ──────────────────────
+
+model Appointment {
+  id           String              @id @default(uuid())
+  patientId    String              @map("patient_id")
+  vetId        String              @map("vet_id")
+  dateTime     DateTime            @map("date_time")
+  category     AppointmentCategory
+  status       AppointmentStatus   @default(SCHEDULED)
+  observation  String?
+  cancelReason String?             @map("cancel_reason") // US08
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+
+  patient        Patient         @relation(fields: [patientId], references: [id])
+  vet            User            @relation("vet_appointments", fields: [vetId], references: [id])
+  clinicalRecord ClinicalRecord?
+
+  @@map("appointments")
+}
+
+enum AppointmentCategory {
+  VACCINATION // Vacinação
+  OBSERVATION // Observação
+  EXAM        // Exame
+  SURGICAL    // Cirúrgico
+}
+
+enum AppointmentStatus {
+  SCHEDULED   // Agendado
+  IN_PROGRESS // Em atendimento
+  COMPLETED   // Finalizado
+  CANCELLED   // Cancelado (US08)
+}
+
+// ── Clinical Records (US09, US10, US11, US13) ────────
+
+model ClinicalRecord {
+  id               String   @id @default(uuid())
+  patientId        String   @map("patient_id")
+  vetId            String   @map("vet_id")
+  appointmentId    String?  @unique @map("appointment_id")
+  weightKg         Decimal? @map("weight_kg") @db.Decimal(5, 2) // US11 — peso na consulta (gera curva de peso)
+  clinicalNotes    String?  @map("clinical_notes")    @db.Text  // US09
+  diagnosis        String?  @db.Text                            // US09
+  pendingDiagnosis String?  @map("pending_diagnosis") @db.Text  // US09, US11
+  prescriptions    String?  @db.Text                            // US10
+  breathingNotes   String?  @map("breathing_notes")             // US09
+  routineGuidance  String?  @map("routine_guidance")  @db.Text  // US09
+  aiSummary        String?  @map("ai_summary")        @db.Text  // US13
+  finalized        Boolean  @default(false)                     // US09, US10
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  patient     Patient      @relation(fields: [patientId], references: [id])
+  vet         User         @relation(fields: [vetId], references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
+  examFiles   ExamFile[]   // US12 — exames desta consulta
+
+  @@map("clinical_records")
+}
+
+// ── Vaccinations (US11) ──────────────────────────────
+
+model Vaccination {
+  id          String            @id @default(uuid())
+  patientId   String            @map("patient_id")
+  vaccineName String            @map("vaccine_name")
+  appliedAt   DateTime?         @map("applied_at")
+  nextDoseAt  DateTime?         @map("next_dose_at") // aviso pendência (US11, US15)
+  status      VaccinationStatus @default(PENDING)
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@map("vaccinations")
+}
+
+enum VaccinationStatus {
+  UP_TO_DATE // Em dia
+  PENDING    // Pendente
+  OVERDUE    // Atrasado
+}
+
+// ── Exam Files (US12) ────────────────────────────────
+
+model ExamFile {
+  id               String   @id @default(uuid())
+  patientId        String   @map("patient_id")
+  clinicalRecordId String?  @map("clinical_record_id") // opcional: vínculo com a consulta
+  fileName         String   @map("file_name")
+  fileUrl          String   @map("file_url") // path local em dev
+  fileType         String   @map("file_type") // "pdf" | "image"
+  uploadedAt       DateTime @default(now()) @map("uploaded_at")
+
+  patient        Patient         @relation(fields: [patientId], references: [id])
+  clinicalRecord ClinicalRecord? @relation(fields: [clinicalRecordId], references: [id])
+
+  @@map("exam_files")
+}
