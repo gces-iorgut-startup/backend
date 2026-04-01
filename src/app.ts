@@ -2,12 +2,20 @@ import fastify from 'fastify'
 import fastifyCors from '@fastify/cors'
 import fastifyJwt from '@fastify/jwt'
 import fastifyCookie from '@fastify/cookie'
+import fastifyMultipart from '@fastify/multipart'
+import fastifyStatic from '@fastify/static'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import { env } from './config/env'
 import { errorHandler } from './shared/middleware/error-handler'
 import { authRoutes } from './modules/auth/infra/http/authRoutes'
 import { tutorRoutes } from './modules/tutor/infra/http/tutorRoutes'
 import { patientRoutes } from './modules/patient/infra/http/patientRoutes'
 import { appointmentRoutes } from './modules/schedule/infra/http/appointmentRoutes'
+import { clinicalRoutes } from './modules/clinical/infra/http/clinicalRoutes'
+import { vaccinationRoutes } from './modules/clinical/infra/http/vaccinationRoutes'
+import { examRoutes } from './modules/clinical/infra/http/examRoutes'
+import { dashboardRoutes } from './modules/dashboard/infra/http/dashboardRoutes'
 
 import fastifySwagger from '@fastify/swagger'
 import fastifySwaggerUi from '@fastify/swagger-ui'
@@ -24,8 +32,8 @@ app.register(fastifySwagger, {
   openapi: {
     info: {
       title: 'IOUGURT API',
-      description: 'API de Gestão Veterinária — MVP 1',
-      version: '1.0.0',
+      description: 'API de Gestão Veterinária — MVP 2',
+      version: '2.0.0',
     },
     components: {
       securitySchemes: {
@@ -55,6 +63,18 @@ app.register(fastifyJwt, {
 
 app.register(fastifyCookie)
 
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+app.register(fastifyMultipart, {
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+})
+
+app.register(fastifyStatic, {
+  root: path.join(__dirname, '..', 'uploads'),
+  prefix: '/uploads/',
+})
+
 // ── Health Check ─────────────────────────────────────
 app.get('/health', () => ({ status: 'ok' }))
 
@@ -63,6 +83,10 @@ app.register(authRoutes, { prefix: '/auth' })
 app.register(tutorRoutes, { prefix: '/tutors' })
 app.register(patientRoutes, { prefix: '/patients' })
 app.register(appointmentRoutes, { prefix: '/appointments' })
+app.register(clinicalRoutes, { prefix: '/clinical-records' })
+app.register(vaccinationRoutes, { prefix: '/vaccinations' })
+app.register(examRoutes, { prefix: '/exams' })
+app.register(dashboardRoutes, { prefix: '/dashboard' })
 
 // ── Error Handler ─────────────────────────────────────
 app.setErrorHandler(errorHandler)
