@@ -18,5 +18,7 @@ export interface CreateAppointmentDTO {
 
 export interface IAppointmentsRepository {
   create(data: CreateAppointmentDTO): Promise<Appointment>
+  findById(id: string): Promise<Appointment | null>
   listByDay(date: Date, vetId?: string): Promise<AppointmentWithRelations[]>
+  updateStatus(id: string, status: AppointmentStatus): Promise<Appointment>
 }

@@ -29,6 +29,17 @@ export class InMemoryAppointmentsRepository implements IAppointmentsRepository {
     return appointment
   }
 
+  async findById(id: string): Promise<Appointment | null> {
+    return this.items.find(a => a.id === id) ?? null
+  }
+
+  async updateStatus(id: string, status: AppointmentStatus): Promise<Appointment> {
+    const index = this.items.findIndex(a => a.id === id)
+    this.items[index].status = status
+    this.items[index].updatedAt = new Date()
+    return this.items[index]
+  }
+
   async listByDay(date: Date, vetId?: string): Promise<AppointmentWithRelations[]> {
     const dateStr = date.toISOString().slice(0, 10) // 'YYYY-MM-DD'
     return this.items.filter(a => {

@@ -16,6 +16,14 @@ export class PrismaAppointmentsRepository implements IAppointmentsRepository {
     return prisma.appointment.create({ data })
   }
 
+  async findById(id: string): Promise<Appointment | null> {
+    return prisma.appointment.findUnique({ where: { id } })
+  }
+
+  async updateStatus(id: string, status: AppointmentStatus): Promise<Appointment> {
+    return prisma.appointment.update({ where: { id }, data: { status } })
+  }
+
   async listByDay(date: Date, vetId?: string): Promise<AppointmentWithRelations[]> {
     const start = new Date(date)
     start.setHours(0, 0, 0, 0)
