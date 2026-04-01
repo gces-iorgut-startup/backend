@@ -40,4 +40,17 @@ export class PrismaAppointmentsRepository implements IAppointmentsRepository {
       orderBy: { dateTime: 'asc' },
     })
   }
+  async cancel(id: string, reason: string): Promise<Appointment> {
+    return prisma.appointment.update({
+      where: { id },
+      data: { status: AppointmentStatus.CANCELLED, cancelReason: reason },
+    })
+  }
+
+  async reschedule(id: string, newDateTime: Date): Promise<Appointment> {
+    return prisma.appointment.update({
+      where: { id },
+      data: { dateTime: newDateTime },
+    })
+  }
 }

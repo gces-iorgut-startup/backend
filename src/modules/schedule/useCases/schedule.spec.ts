@@ -76,3 +76,97 @@ describe('ListAppointmentsByDayUseCase', () => {
     expect(result).toHaveLength(0)
   })
 })
+
+import { CancelAppointmentUseCase } from './cancelAppointmentUseCase'
+import { RescheduleAppointmentUseCase } from './rescheduleAppointmentUseCase'
+
+describe('CancelAppointmentUseCase', () => {
+  it('deve cancelar um agendamento SCHEDULED com justificativa', async () => {
+    const { appointmentsRepo, patientId, vetId } = await setupRepos()
+    const createUC = new CreateAppointmentUseCase(appointmentsRepo, new InMemoryPatientsRepository(), new InMemoryUsersRepository())
+    // Recria repos com dados
+    const pRepo = new InMemoryPatientsRepository()
+    const uRepo = new InMemoryUsersRepository()
+    const aRepo = new InMemoryAppointmentsRepository()
+    const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'Cachorro' })
+    const vet = await uRepo.create({ name: 'Dr. Vet', email: 'vet2@g.com', passwordHash: 'x', role: 'VET' })
+    const appointment = await new CreateAppointmentUseCase(aRepo, pRepo, uRepo).execute({
+      patientId: patient.id,
+      vetId: vet.id,
+      dateTime: new Date('2099-01-01T10:00:00'),
+      category: 'OBSERVATION',
+    })
+    const cancelUC = new CancelAppointmentUseCase(aRepo)
+    const result = await cancelUC.execute({ appointmentId: appointment.id, reason: 'Paciente não compareceu' })
+    expect(result.status).toBe('CANCELLED')
+    expect(result.cancelReason).toBe('Paciente não compareceu')
+  })
+
+  it('deve rejeitar cancelamento sem justificativa adequada', async () => {
+    const aRepo = new InMemoryAppointmentsRepository()
+    const pRepo = new InMemoryPatientsRepository()
+    const uRepo = new InMemoryUsersRepository()
+    const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'Cachorro' })
+    const vet = await uRepo.create({ name: 'Dr. Vet', email: 'vet3@g.com', passwordHash: 'x', role: 'VET' })
+    const appointment = await new CreateAppointmentUseCase(aRepo, pRepo, uRepo).execute({
+      patientId: patient.id, vetId: vet.id,
+      dateTime: new Date('2099-01-01T10:00:00'), category: 'OBSERVATION',
+    })
+    const cancelUC = new CancelAppointmentUseCase(aRepo)
+    await expect(cancelUC.execute({ appointmentId: appointment.id, reason: 'ok' }))
+      .rejects.toMatchObject({ statusCode: 400 })
+  })
+
+  it('deve rejeitar cancelamento de agendamento já cancelado', async () => {
+    const aRepo = new InMemoryAppointmentsRepository()
+    const pRepo = new InMemoryPatientsRepository()
+    const uRepo = new InMemoryUsersRepository()
+    const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'Cachorro' })
+    const vet = await uRepo.create({ name: 'Dr. Vet', email: 'vet4@g.com', passwordHash: 'x', role: 'VET' })
+    const appointment = await new CreateAppointmentUseCase(aRepo, pRepo, uRepo).execute({
+      patientId: patient.id, vetId: vet.id,
+      dateTime: new Date('2099-01-01T10:00:00'), category: 'OBSERVATION',
+    })
+    const cancelUC = new CancelAppointmentUseCase(aRepo)
+    await cancelUC.execute({ appointmentId: appointment.id, reason: 'Motivo válido aqui' })
+    await expect(cancelUC.execute({ appointmentId: appointment.id, reason: 'Motivo válido aqui' }))
+      .rejects.toMatchObject({ statusCode: 400 })
+  })
+})
+
+describe('RescheduleAppointmentUseCase', () => {
+  it('deve reagendar um agendamento SCHEDULED para data futura', async () => {
+    const aRepo = new InMemoryAppointmentsRepository()
+    const pRepo = new InMemoryPatientsRepository()
+    const uRepo = new InMemoryUsersRepository()
+    const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'Cachorro' })
+    const vet = await uRepo.create({ name: 'Dr. Vet', email: 'vet5@g.com', passwordHash: 'x', role: 'VET' })
+    const appointment = await new CreateAppointmentUseCase(aRepo, pRepo, uRepo).execute({
+      patientId: patient.id, vetId: vet.id,
+      dateTime: new Date('2099-01-01T10:00:00'), category: 'OBSERVATION',
+    })
+    const newDate = new Date('2099-06-01T10:00:00')
+    const result = await new RescheduleAppointmentUseCase(aRepo).execute({
+      appointmentId: appointment.id, newDateTime: newDate,
+    })
+    expect(result.dateTime).toEqual(newDate)
+  })
+
+  it('deve rejeitar reagendamento para data no passado', async () => {
+    const aRepo = new InMemoryAppointmentsRepository()
+    const pRepo = new InMemoryPatientsRepository()
+    const uRepo = new InMemoryUsersRepository()
+    const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'Cachorro' })
+    const vet = await uRepo.create({ name: 'Dr. Vet', email: 'vet6@g.com', passwordHash: 'x', role: 'VET' })
+    const appointment = await new CreateAppointmentUseCase(aRepo, pRepo, uRepo).execute({
+      patientId: patient.id, vetId: vet.id,
+      dateTime: new Date('2099-01-01T10:00:00'), category: 'OBSERVATION',
+    })
+    await expect(
+      new RescheduleAppointmentUseCase(aRepo).execute({
+        appointmentId: appointment.id,
+        newDateTime: new Date('2020-01-01'),
+      })
+    ).rejects.toMatchObject({ statusCode: 400 })
+  })
+})

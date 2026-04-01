@@ -51,4 +51,18 @@ export class InMemoryAppointmentsRepository implements IAppointmentsRepository {
       )
     })
   }
+  async cancel(id: string, reason: string): Promise<Appointment> {
+    const index = this.items.findIndex(a => a.id === id)
+    this.items[index].status = AppointmentStatus.CANCELLED
+    this.items[index].cancelReason = reason
+    this.items[index].updatedAt = new Date()
+    return this.items[index]
+  }
+
+  async reschedule(id: string, newDateTime: Date): Promise<Appointment> {
+    const index = this.items.findIndex(a => a.id === id)
+    this.items[index].dateTime = newDateTime
+    this.items[index].updatedAt = new Date()
+    return this.items[index]
+  }
 }

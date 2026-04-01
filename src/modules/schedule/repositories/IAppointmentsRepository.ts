@@ -21,4 +21,6 @@ export interface IAppointmentsRepository {
   findById(id: string): Promise<Appointment | null>
   listByDay(date: Date, vetId?: string): Promise<AppointmentWithRelations[]>
   updateStatus(id: string, status: AppointmentStatus): Promise<Appointment>
+  cancel(id: string, reason: string): Promise<Appointment>
+  reschedule(id: string, newDateTime: Date): Promise<Appointment>
 }
