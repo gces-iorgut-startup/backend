@@ -3,6 +3,8 @@ import { startClinicalRecordController, startClinicalRecordBodySchema } from './
 import { updateClinicalRecordController, updateClinicalRecordParamsSchema, updateClinicalRecordBodySchema } from './controllers/updateClinicalRecordController'
 import { finalizeClinicalRecordController, finalizeClinicalRecordParamsSchema } from './controllers/finalizeClinicalRecordController'
 import { getPatientHistoryController, getPatientHistoryParamsSchema } from './controllers/getPatientHistoryController'
+import { generatePrescriptionController, generatePrescriptionParamsSchema } from './controllers/generatePrescriptionController'
+import { generateAISummaryController, generateAISummaryParamsSchema } from './controllers/generateAISummaryController'
 import { verifyJwt } from '@shared/middleware/verify-jwt'
 
 export const clinicalRoutes: FastifyPluginAsyncZod = async app => {
@@ -59,5 +61,31 @@ export const clinicalRoutes: FastifyPluginAsyncZod = async app => {
       },
     },
     getPatientHistoryController
+  )
+
+  app.get(
+    '/:id/prescription',
+    {
+      schema: {
+        summary: 'Gerar Receituário em PDF (prontuário deve estar finalizado)',
+        tags: ['Clinical Record'],
+        params: generatePrescriptionParamsSchema,
+        security: [{ bearerAuth: [] }],
+      },
+    },
+    generatePrescriptionController
+  )
+
+  app.post(
+    '/:id/ai-summary',
+    {
+      schema: {
+        summary: 'Gerar Resumo do Atendimento por IA (Gemini)',
+        tags: ['Clinical Record'],
+        params: generateAISummaryParamsSchema,
+        security: [{ bearerAuth: [] }],
+      },
+    },
+    generateAISummaryController
   )
 }
