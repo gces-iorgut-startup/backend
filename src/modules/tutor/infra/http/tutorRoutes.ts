@@ -4,6 +4,7 @@ import { createTutorController, createTutorBodySchema } from './controllers/crea
 import { listTutorsController, listTutorsQuerySchema } from './controllers/listTutorsController'
 import { getTutorController, getTutorParamsSchema } from './controllers/getTutorController'
 import { updateTutorController, updateTutorBodySchema } from './controllers/updateTutorController'
+import { createTutorAccountController, createTutorAccountParamsSchema, createTutorAccountBodySchema } from './controllers/createTutorAccountController'
 
 export const tutorRoutes: FastifyPluginAsyncZod = async (app) => {
   app.addHook('preHandler', verifyJwt)
@@ -44,4 +45,14 @@ export const tutorRoutes: FastifyPluginAsyncZod = async (app) => {
       body: updateTutorBodySchema,
     },
   }, updateTutorController)
+
+  app.post('/:id/account', {
+    schema: {
+      tags: ['Tutors'],
+      summary: 'Criar conta de acesso ao portal para o tutor (gera senha temporária)',
+      security: [{ bearerAuth: [] }],
+      params: createTutorAccountParamsSchema,
+      body: createTutorAccountBodySchema,
+    },
+  }, createTutorAccountController)
 }

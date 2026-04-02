@@ -16,6 +16,7 @@ import { clinicalRoutes } from './modules/clinical/infra/http/clinicalRoutes'
 import { vaccinationRoutes } from './modules/clinical/infra/http/vaccinationRoutes'
 import { examRoutes } from './modules/clinical/infra/http/examRoutes'
 import { dashboardRoutes } from './modules/dashboard/infra/http/dashboardRoutes'
+import { portalRoutes } from './modules/portal/infra/http/portalRoutes'
 
 import fastifySwagger from '@fastify/swagger'
 import fastifySwaggerUi from '@fastify/swagger-ui'
@@ -32,8 +33,8 @@ app.register(fastifySwagger, {
   openapi: {
     info: {
       title: 'IOUGURT API',
-      description: 'API de Gestão Veterinária — MVP 2',
-      version: '2.0.0',
+      description: 'API de Gestão Veterinária — MVP 3 (Completo)',
+      version: '3.0.0',
     },
     components: {
       securitySchemes: {
@@ -87,6 +88,7 @@ app.register(clinicalRoutes, { prefix: '/clinical-records' })
 app.register(vaccinationRoutes, { prefix: '/vaccinations' })
 app.register(examRoutes, { prefix: '/exams' })
 app.register(dashboardRoutes, { prefix: '/dashboard' })
+app.register(portalRoutes, { prefix: '/portal' })
 
 // ── Error Handler ─────────────────────────────────────
 app.setErrorHandler(errorHandler)
