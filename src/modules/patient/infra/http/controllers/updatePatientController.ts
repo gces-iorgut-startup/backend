@@ -6,10 +6,13 @@ export const updatePatientBodySchema = z.object({
   name: z.string().min(1).optional(),
   species: z.string().optional(),
   breed: z.string().optional(),
-  birthDate: z.string().datetime().optional().transform(v => v ? new Date(v) : undefined),
+  birthDate: z.coerce.date().optional(),
+  sex: z.string().optional(),
+  weightKg: z.number().optional(),
+  observations: z.string().optional(),
   microchip: z.string().optional(),
   allergies: z.string().optional(),
-  photoUrl: z.string().url().optional(),
+  photoUrl: z.string().optional(),
 })
 
 export async function updatePatientController(

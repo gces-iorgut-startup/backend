@@ -7,10 +7,13 @@ export const createPatientBodySchema = z.object({
   tutorId: z.string().uuid(),
   species: z.string().min(1),
   breed: z.string().optional(),
-  birthDate: z.string().datetime().optional().transform(v => v ? new Date(v) : undefined),
+  birthDate: z.coerce.date().optional(),
+  sex: z.string().optional(),
+  weightKg: z.number().optional(),
+  observations: z.string().optional(),
   microchip: z.string().optional(),
   allergies: z.string().optional(),
-  photoUrl: z.string().url().optional(),
+  photoUrl: z.string().optional(),
 })
 
 export async function createPatientController(request: FastifyRequest, reply: FastifyReply) {

@@ -68,18 +68,20 @@ model Tutor {
 // ── Patients (US04, US05) ────────────────────────────
 
 model Patient {
-  id        String    @id @default(uuid())
-  name      String
-  photoUrl  String?   @map("photo_url")
-  birthDate DateTime? @map("birth_date")
-  // peso removido: use WeightRecord para histórico; peso atual = último registro
-  microchip String?
-  allergies String?
-  species   String
-  breed     String?
-  tutorId   String    @map("tutor_id")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
+  id           String    @id @default(uuid())
+  name         String
+  photoUrl     String?   @map("photo_url")
+  birthDate    DateTime? @map("birth_date")
+  sex          String?                          // Feminino | Masculino
+  weightKg     Decimal?  @map("weight_kg") @db.Decimal(5, 2)
+  observations String?   @db.Text
+  microchip    String?
+  allergies    String?
+  species      String
+  breed        String?
+  tutorId      String    @map("tutor_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
   tutor           Tutor            @relation(fields: [tutorId], references: [id])
   appointments    Appointment[]

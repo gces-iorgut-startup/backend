@@ -10,6 +10,9 @@ export interface CreatePatientDTO {
   species: string
   breed?: string
   birthDate?: Date
+  sex?: string
+  weightKg?: number
+  observations?: string
   microchip?: string
   allergies?: string
   photoUrl?: string
@@ -20,6 +23,9 @@ export interface UpdatePatientDTO {
   species?: string
   breed?: string
   birthDate?: Date
+  sex?: string
+  weightKg?: number
+  observations?: string
   microchip?: string
   allergies?: string
   photoUrl?: string
@@ -28,6 +34,8 @@ export interface UpdatePatientDTO {
 export interface ListPatientsDTO {
   search?: string
   tutorId?: string
+  species?: string
+  updateDate?: string
   page?: number
   perPage?: number
 }

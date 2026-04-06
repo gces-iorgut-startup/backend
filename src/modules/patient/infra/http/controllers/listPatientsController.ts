@@ -5,6 +5,8 @@ import { makeListPatientsUseCase } from '../../../useCases/factories/makeListPat
 export const listPatientsQuerySchema = z.object({
   search: z.string().optional(),
   tutorId: z.string().uuid().optional(),
+  species: z.string().optional(),
+  updateDate: z.string().optional(),
   page: z.coerce.number().default(1),
   perPage: z.coerce.number().default(20),
 })

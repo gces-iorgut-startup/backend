@@ -7,12 +7,30 @@ export function errorHandler(
   _request: FastifyRequest,
   reply: FastifyReply,
 ) {
-  // Zod validation errors
-  if (error instanceof ZodError) {
+  console.error(`\n[ErrorHandler] Error on ${_request.method} ${_request.url}:`, error)
+  if (_request.body) console.error(`[ErrorHandler] Payload:`, JSON.stringify(_request.body, null, 2))
+
+  // Zod validation errors via Fastify hook
+  if ('validation' in error && Array.isArray((error as any).validation)) {
+    const issues = (error as any).validation
+    console.error(`[ErrorHandler] Zod Validation Error issues:`, JSON.stringify(issues, null, 2))
     return reply.status(422).send({
       statusCode: 422,
       error: 'Validation Error',
-      issues: error.flatten().fieldErrors,
+      issues: issues,
+      message: 'Erros de validação: ' + issues.map((i: any) => `${i.params?.issue?.path?.join('.') || i.instancePath}: ${i.message}`).join(', ')
+    })
+  }
+
+  // Zod validation errors direct manual parse
+  if (error instanceof ZodError) {
+    const issues = error.flatten().fieldErrors
+    console.error(`[ErrorHandler] Zod Validation Error issues:`, issues)
+    return reply.status(422).send({
+      statusCode: 422,
+      error: 'Validation Error',
+      issues: issues,
+      message: 'Erros de validação nos campos'
     })
   }
 
