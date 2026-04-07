@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto'
+import { Decimal } from '@prisma/client/runtime/library'
 import type { Patient, Tutor } from '@prisma/client'
 import type {
   IPatientsRepository,
@@ -52,7 +53,11 @@ export class InMemoryPatientsRepository implements IPatientsRepository {
 
   async update(id: string, data: UpdatePatientDTO): Promise<Patient> {
     const index = this.items.findIndex(p => p.id === id)
-    this.items[index] = { ...this.items[index], ...data, updatedAt: new Date() }
+    const patch = {
+      ...data,
+      weightKg: data.weightKg != null ? new Decimal(data.weightKg) : this.items[index].weightKg,
+    }
+    this.items[index] = { ...this.items[index], ...patch, updatedAt: new Date() }
     return this.items[index]
   }
 

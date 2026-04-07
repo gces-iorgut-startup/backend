@@ -8,6 +8,7 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('30m'),
   REFRESH_TOKEN_EXPIRES_IN: z.string().default('7d'),
   GEMINI_API_KEY: z.string().default(''),
+  GOOGLE_CLIENT_ID: z.string().default(''),
 })
 
 const _env = envSchema.safeParse(process.env)

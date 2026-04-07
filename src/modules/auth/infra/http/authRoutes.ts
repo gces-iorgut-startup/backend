@@ -3,6 +3,7 @@ import { createUserController, createUserBodySchema } from './controllers/create
 import { authenticateController, authenticateBodySchema } from './controllers/authenticateController'
 import { refreshTokenController, refreshTokenBodySchema } from './controllers/refreshTokenController'
 import { logoutController } from './controllers/logoutController'
+import { googleAuthController, googleAuthBodySchema } from './controllers/googleAuthController'
 import { verifyJwt } from '@shared/middleware/verify-jwt'
 
 export const authRoutes: FastifyPluginAsyncZod = async (app) => {
@@ -38,4 +39,12 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
       security: [{ bearerAuth: [] }],
     },
   }, logoutController)
+
+  app.post('/google', {
+    schema: {
+      tags: ['Auth'],
+      summary: 'Login / Registro com Google (envia o idToken obtido pelo frontend)',
+      body: googleAuthBodySchema,
+    },
+  }, googleAuthController)
 }
