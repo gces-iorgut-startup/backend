@@ -7,6 +7,7 @@ export type PatientWithTutor = Patient & { tutor: Tutor }
 export interface CreatePatientDTO {
   name: string
   tutorId: string
+  clinicId: string
   species: string
   breed?: string
   birthDate?: Date
@@ -32,6 +33,7 @@ export interface UpdatePatientDTO {
 }
 
 export interface ListPatientsDTO {
+  clinicId: string
   search?: string
   tutorId?: string
   species?: string

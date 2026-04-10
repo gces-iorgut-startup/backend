@@ -4,6 +4,7 @@ import { AppError } from '../../../shared/errors/app-error'
 
 interface GetAdminMetricsRequest {
   userId: string
+  clinicId: string
 }
 
 export class GetAdminMetricsUseCase {
@@ -12,7 +13,7 @@ export class GetAdminMetricsUseCase {
     private usersRepository: IUsersRepository
   ) {}
 
-  async execute({ userId }: GetAdminMetricsRequest): Promise<AdminMetrics> {
+  async execute({ userId, clinicId }: GetAdminMetricsRequest): Promise<AdminMetrics> {
     const requester = await this.usersRepository.findById(userId)
 
     if (!requester) {
@@ -23,6 +24,6 @@ export class GetAdminMetricsUseCase {
       throw new AppError('Acesso restrito. Apenas administradores (donos) podem acessar essas métricas.', 403)
     }
 
-    return this.dashboardRepository.getAdminMetrics()
+    return this.dashboardRepository.getAdminMetrics(clinicId)
   }
 }

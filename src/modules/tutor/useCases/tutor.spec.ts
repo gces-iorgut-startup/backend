@@ -5,7 +5,10 @@ import { ListTutorsUseCase } from './listTutorsUseCase'
 import { UpdateTutorUseCase } from './updateTutorUseCase'
 import { InMemoryTutorsRepository } from '../repositories/in-memory/InMemoryTutorsRepository'
 
+const CLINIC_ID = 'clinic-1'
+
 const makeInput = (overrides = {}) => ({
+  clinicId: CLINIC_ID,
   fullName: 'Maria Silva', cpf: '12345678901', phone: '61999990000', ...overrides,
 })
 
@@ -17,11 +20,19 @@ describe('CreateTutorUseCase', () => {
     expect(tutor.fullName).toBe('Maria Silva')
   })
 
-  it('não deve criar tutor com CPF duplicado (409)', async () => {
+  it('não deve criar tutor com CPF duplicado na mesma clínica (409)', async () => {
     const repo = new InMemoryTutorsRepository()
     const sut = new CreateTutorUseCase(repo)
     await sut.execute(makeInput())
     await expect(sut.execute(makeInput())).rejects.toMatchObject({ statusCode: 409 })
+  })
+
+  it('deve permitir mesmo CPF em clínicas diferentes', async () => {
+    const repo = new InMemoryTutorsRepository()
+    const sut = new CreateTutorUseCase(repo)
+    await sut.execute(makeInput({ clinicId: 'clinic-1' }))
+    const tutor2 = await sut.execute(makeInput({ clinicId: 'clinic-2' }))
+    expect(tutor2.id).toBeDefined()
   })
 })
 
@@ -46,16 +57,18 @@ describe('ListTutorsUseCase', () => {
     await repo.create(makeInput({ fullName: 'Maria Silva', cpf: '11111111111' }))
     await repo.create(makeInput({ fullName: 'João Santos', cpf: '22222222222' }))
     await repo.create(makeInput({ fullName: 'Carlos Oliveira', cpf: '33333333333' }))
+    // Tutor em outra clínica — não deve aparecer nas listagens da clinic-1
+    await repo.create(makeInput({ fullName: 'Outro Clinic', cpf: '44444444444', clinicId: 'clinic-2' }))
   })
 
-  it('deve listar todos os tutores', async () => {
-    const result = await new ListTutorsUseCase(repo).execute({})
+  it('deve listar apenas tutores da clínica correta', async () => {
+    const result = await new ListTutorsUseCase(repo).execute({ clinicId: CLINIC_ID })
     expect(result.total).toBe(3)
     expect(result.tutors).toHaveLength(3)
   })
 
   it('deve filtrar por nome (search case-insensitive)', async () => {
-    const result = await new ListTutorsUseCase(repo).execute({ search: 'maria' })
+    const result = await new ListTutorsUseCase(repo).execute({ clinicId: CLINIC_ID, search: 'maria' })
     expect(result.total).toBe(1)
     expect(result.tutors[0].fullName).toBe('Maria Silva')
   })
@@ -69,7 +82,7 @@ describe('UpdateTutorUseCase', () => {
     expect(updated.phone).toBe('61988880000')
   })
 
-  it('deve lançar 409 ao atualizar para CPF já cadastrado', async () => {
+  it('deve lançar 409 ao atualizar para CPF já cadastrado na mesma clínica', async () => {
     const repo = new InMemoryTutorsRepository()
     const tutorA = await repo.create(makeInput({ cpf: '11111111111' }))
     await repo.create(makeInput({ cpf: '22222222222' }))

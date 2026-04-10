@@ -16,7 +16,9 @@ export async function authenticateController(request: FastifyRequest, reply: Fas
   const accessToken = await reply.jwtSign({
     userId: result.user.id,
     role: result.user.role as Role,
+    clinicId: result.user.clinicId,
   })
 
   return reply.status(200).send({ user: result.user, accessToken, refreshToken: result.refreshToken })
 }
+

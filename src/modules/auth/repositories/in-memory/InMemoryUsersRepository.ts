@@ -12,6 +12,7 @@ export class InMemoryUsersRepository implements IUsersRepository {
       passwordHash: data.passwordHash,
       name: data.name,
       role: data.role,
+      clinicId: data.clinicId,
       avatarUrl: null,
       createdAt: new Date(),
       updatedAt: new Date(),

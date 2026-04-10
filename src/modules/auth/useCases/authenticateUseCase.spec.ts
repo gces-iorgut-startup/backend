@@ -18,7 +18,7 @@ describe('AuthenticateUseCase', () => {
     usersRepository = new InMemoryUsersRepository()
     refreshTokensRepository = new InMemoryRefreshTokensRepository()
     sut = new AuthenticateUseCase(usersRepository, refreshTokensRepository, new FakeHashProvider())
-    await usersRepository.create({ name: 'Dr. Gustavo', email: 'gustavo@iougurt.com', passwordHash: 'hashed:senha123', role: 'OWNER' })
+    await usersRepository.create({ name: 'Dr. Gustavo', email: 'gustavo@iougurt.com', passwordHash: 'hashed:senha123', role: 'OWNER', clinicId: 'clinic-1' })
   })
 
   it('deve autenticar com credenciais corretas e retornar refreshToken', async () => {

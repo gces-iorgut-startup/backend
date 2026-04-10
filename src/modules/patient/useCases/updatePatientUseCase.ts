@@ -20,7 +20,7 @@ export class UpdatePatientUseCase {
 
     if (tutor) {
       if (tutor.cpf && tutor.cpf !== patient.tutor.cpf) {
-        const existingTutor = await this.tutorsRepository.findByCpf(tutor.cpf)
+        const existingTutor = await this.tutorsRepository.findByCpf(tutor.cpf, patient.tutor.clinicId)
         if (existingTutor && existingTutor.id !== patient.tutorId) {
           throw Errors.conflict('CPF já cadastrado')
         }

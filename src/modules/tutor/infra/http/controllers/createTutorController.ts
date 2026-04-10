@@ -12,7 +12,8 @@ export const createTutorBodySchema = z.object({
 
 export async function createTutorController(request: FastifyRequest, reply: FastifyReply) {
   const body = createTutorBodySchema.parse(request.body)
+  const { clinicId } = request.user
   const useCase = makeCreateTutorUseCase()
-  const tutor = await useCase.execute(body)
+  const tutor = await useCase.execute({ ...body, clinicId })
   return reply.status(201).send({ tutor })
 }

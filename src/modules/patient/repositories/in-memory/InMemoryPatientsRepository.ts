@@ -12,6 +12,7 @@ import type {
 const dummyTutor: Tutor = {
   id: '',
   userId: null,
+  clinicId: 'clinic-1',
   fullName: 'Tutor',
   cpf: '00000000000',
   phone: '',
@@ -39,9 +40,10 @@ export class InMemoryPatientsRepository implements IPatientsRepository {
       allergies: data.allergies ?? null,
       photoUrl: data.photoUrl ?? null,
       tutorId: data.tutorId,
+      clinicId: data.clinicId,
       createdAt: new Date(),
       updatedAt: new Date(),
-      tutor: { ...dummyTutor, id: data.tutorId },
+      tutor: { ...dummyTutor, id: data.tutorId, clinicId: data.clinicId },
     }
     this.items.push(patient)
     return patient
@@ -61,8 +63,8 @@ export class InMemoryPatientsRepository implements IPatientsRepository {
     return this.items[index]
   }
 
-  async list({ search, tutorId, page = 1, perPage = 20 }: ListPatientsDTO): Promise<{ patients: PatientWithTutor[]; total: number }> {
-    let patients = [...this.items]
+  async list({ clinicId, search, tutorId, page = 1, perPage = 20 }: ListPatientsDTO): Promise<{ patients: PatientWithTutor[]; total: number }> {
+    let patients = this.items.filter(p => p.clinicId === clinicId)
     if (search) patients = patients.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
     if (tutorId) patients = patients.filter(p => p.tutorId === tutorId)
     const total = patients.length

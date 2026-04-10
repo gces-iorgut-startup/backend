@@ -5,11 +5,11 @@ export async function getAdminMetricsController(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const userId = request.user.userId
+  const { userId, clinicId } = request.user
 
   const useCase = makeGetAdminMetricsUseCase()
 
-  const metrics = await useCase.execute({ userId })
+  const metrics = await useCase.execute({ userId, clinicId })
 
   return reply.status(200).send(metrics)
 }

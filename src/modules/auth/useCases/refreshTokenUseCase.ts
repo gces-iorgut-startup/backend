@@ -6,7 +6,7 @@ const REFRESH_EXPIRES_DAYS = 7
 
 interface RefreshTokenInput { refreshToken: string }
 interface RefreshTokenOutput {
-  user: { id: string; name: string; email: string; role: string }
+  user: { id: string; name: string; email: string; role: string; clinicId: string }
   refreshToken: string
 }
 
@@ -38,7 +38,7 @@ export class RefreshTokenUseCase {
     await this.refreshTokensRepository.create({ token: newToken, userId: user.id, expiresAt })
 
     return {
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, clinicId: user.clinicId },
       refreshToken: newToken,
     }
   }

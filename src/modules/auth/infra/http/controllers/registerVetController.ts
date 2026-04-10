@@ -1,17 +1,17 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
 import { z } from 'zod'
 import { makeCreateVetUseCase } from '../../../useCases/factories/makeCreateVetUseCase'
+import type { Role } from '@prisma/client'
 
-// Mantido para compatibilidade — agora apenas OWNERs podem criar VETs via /auth/register/vet
-export const createUserBodySchema = z.object({
+export const registerVetBodySchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(6),
 })
 
-export async function createUserController(request: FastifyRequest, reply: FastifyReply) {
-  const body = createUserBodySchema.parse(request.body)
-  const { clinicId } = request.user
+export async function registerVetController(request: FastifyRequest, reply: FastifyReply) {
+  const body = registerVetBodySchema.parse(request.body)
+  const { clinicId } = request.user as { userId: string; role: Role; clinicId: string }
   const useCase = makeCreateVetUseCase()
   const user = await useCase.execute({ ...body, clinicId })
   return reply.status(201).send({ user })

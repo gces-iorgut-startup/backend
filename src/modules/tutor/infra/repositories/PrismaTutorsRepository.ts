@@ -11,14 +11,15 @@ export class PrismaTutorsRepository implements ITutorsRepository {
     return prisma.tutor.findUnique({ where: { id } })
   }
 
-  async findByCpf(cpf: string): Promise<Tutor | null> {
-    return prisma.tutor.findUnique({ where: { cpf } })
+  async findByCpf(cpf: string, clinicId: string): Promise<Tutor | null> {
+    return prisma.tutor.findUnique({ where: { cpf_clinicId: { cpf, clinicId } } })
   }
 
-  async list({ search, page = 1, perPage = 20 }: ListTutorsDTO): Promise<{ tutors: Tutor[]; total: number }> {
-    const where = search
-      ? { fullName: { contains: search, mode: 'insensitive' as const } }
-      : {}
+  async list({ clinicId, search, page = 1, perPage = 20 }: ListTutorsDTO): Promise<{ tutors: Tutor[]; total: number }> {
+    const where = {
+      clinicId,
+      ...(search && { fullName: { contains: search, mode: 'insensitive' as const } }),
+    }
 
     const [tutors, total] = await Promise.all([
       prisma.tutor.findMany({ where, skip: (page - 1) * perPage, take: perPage, orderBy: { fullName: 'asc' } }),

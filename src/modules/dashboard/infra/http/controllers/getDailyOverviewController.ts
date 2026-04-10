@@ -12,10 +12,10 @@ export async function getDailyOverviewController(
   reply: FastifyReply
 ) {
   const { date, vetId } = request.query
-  const userId = request.user.userId
+  const { userId, clinicId } = request.user
 
   const targetDate = date ? new Date(date) : new Date()
-  const targetVetId = vetId ?? userId // If no vetId provided, see my own
+  const targetVetId = vetId ?? userId
 
   const useCase = makeGetDailyOverviewUseCase()
 
@@ -23,6 +23,7 @@ export async function getDailyOverviewController(
     date: targetDate,
     vetId: targetVetId,
     userId,
+    clinicId,
   })
 
   return reply.status(200).send(overview)

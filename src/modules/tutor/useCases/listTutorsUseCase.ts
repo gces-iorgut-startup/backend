@@ -2,6 +2,7 @@ import type { ITutorsRepository } from '../repositories/ITutorsRepository'
 import type { Tutor } from '@prisma/client'
 
 interface ListTutorsInput {
+  clinicId: string
   search?: string
   page?: number
   perPage?: number

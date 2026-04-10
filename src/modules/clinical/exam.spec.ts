@@ -23,6 +23,7 @@ describe('Exam Files Use Cases', () => {
       name: 'Luna',
       species: 'Cat',
       tutorId: 'tutor-xyz',
+      clinicId: 'clinic-1',
     })
 
     const file = await uploadUseCase.execute({
@@ -50,6 +51,7 @@ describe('Exam Files Use Cases', () => {
       name: 'Luna',
       species: 'Cat',
       tutorId: 'tutor-xyz',
+      clinicId: 'clinic-1',
     })
 
     await uploadUseCase.execute({

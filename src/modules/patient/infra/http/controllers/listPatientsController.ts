@@ -13,7 +13,8 @@ export const listPatientsQuerySchema = z.object({
 
 export async function listPatientsController(request: FastifyRequest, reply: FastifyReply) {
   const query = listPatientsQuerySchema.parse(request.query)
+  const { clinicId } = request.user
   const useCase = makeListPatientsUseCase()
-  const result = await useCase.execute(query)
+  const result = await useCase.execute({ ...query, clinicId })
   return reply.status(200).send(result)
 }

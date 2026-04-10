@@ -7,6 +7,7 @@ export interface CreateUserDTO {
   passwordHash: string
   name: string
   role: Role
+  clinicId: string
 }
 
 export interface IUsersRepository {

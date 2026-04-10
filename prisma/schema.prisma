@@ -7,6 +7,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ── Clinic (Multi-Tenancy) ────────────────────────────
+
+model Clinic {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users    User[]
+  tutors   Tutor[]
+  patients Patient[]
+
+  @@map("clinics")
+}
+
 // ── Auth & Users (US01) ──────────────────────────────
 
 model User {
@@ -16,9 +31,11 @@ model User {
   name         String
   avatarUrl    String?  @map("avatar_url")
   role         Role     @default(VET)
+  clinicId     String   @map("clinic_id")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  clinic          Clinic           @relation(fields: [clinicId], references: [id])
   refreshTokens   RefreshToken[]
   appointments    Appointment[]    @relation("vet_appointments")
   clinicalRecords ClinicalRecord[]
@@ -50,8 +67,9 @@ model RefreshToken {
 model Tutor {
   id        String   @id @default(uuid())
   userId    String?  @unique @map("user_id") // Portal do Tutor (US14)
+  clinicId  String   @map("clinic_id")
   fullName  String   @map("full_name")
-  cpf       String   @unique
+  cpf       String
   phone     String
   email     String?
   address   String?
@@ -59,9 +77,11 @@ model Tutor {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  clinic   Clinic    @relation(fields: [clinicId], references: [id])
   user     User?     @relation(fields: [userId], references: [id])
   patients Patient[]
 
+  @@unique([cpf, clinicId]) // CPF único por clínica
   @@map("tutors")
 }
 
@@ -80,9 +100,11 @@ model Patient {
   species      String
   breed        String?
   tutorId      String    @map("tutor_id")
+  clinicId     String    @map("clinic_id")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
+  clinic          Clinic           @relation(fields: [clinicId], references: [id])
   tutor           Tutor            @relation(fields: [tutorId], references: [id])
   appointments    Appointment[]
   clinicalRecords ClinicalRecord[]

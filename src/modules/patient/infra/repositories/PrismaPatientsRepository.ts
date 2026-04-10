@@ -19,7 +19,7 @@ export class PrismaPatientsRepository implements IPatientsRepository {
     return prisma.patient.update({ where: { id }, data })
   }
 
-  async list({ search, tutorId, species, updateDate, page = 1, perPage = 20 }: ListPatientsDTO): Promise<{ patients: PatientWithTutor[]; total: number }> {
+  async list({ clinicId, search, tutorId, species, updateDate, page = 1, perPage = 20 }: ListPatientsDTO): Promise<{ patients: PatientWithTutor[]; total: number }> {
     let dateFilter = {}
     if (updateDate && updateDate.length === 10) {
       const parts = updateDate.split('/')
@@ -37,6 +37,7 @@ export class PrismaPatientsRepository implements IPatientsRepository {
     }
 
     const where = {
+      clinicId,
       ...(tutorId && { tutorId }),
       ...(species && { species }),
       ...dateFilter,

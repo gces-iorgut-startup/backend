@@ -14,6 +14,7 @@ export class InMemoryTutorsRepository implements ITutorsRepository {
     const tutor: Tutor = {
       id: randomUUID(),
       userId: null,
+      clinicId: data.clinicId,
       fullName: data.fullName,
       cpf: data.cpf,
       phone: data.phone,
@@ -31,12 +32,12 @@ export class InMemoryTutorsRepository implements ITutorsRepository {
     return this.items.find(t => t.id === id) ?? null
   }
 
-  async findByCpf(cpf: string): Promise<Tutor | null> {
-    return this.items.find(t => t.cpf === cpf) ?? null
+  async findByCpf(cpf: string, clinicId: string): Promise<Tutor | null> {
+    return this.items.find(t => t.cpf === cpf && t.clinicId === clinicId) ?? null
   }
 
-  async list({ search, page = 1, perPage = 20 }: ListTutorsDTO): Promise<{ tutors: Tutor[]; total: number }> {
-    let tutors = [...this.items]
+  async list({ clinicId, search, page = 1, perPage = 20 }: ListTutorsDTO): Promise<{ tutors: Tutor[]; total: number }> {
+    let tutors = this.items.filter(t => t.clinicId === clinicId)
     if (search) {
       tutors = tutors.filter(t => t.fullName.toLowerCase().includes(search.toLowerCase()))
     }

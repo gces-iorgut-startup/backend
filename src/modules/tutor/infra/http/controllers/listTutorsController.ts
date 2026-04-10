@@ -10,7 +10,8 @@ export const listTutorsQuerySchema = z.object({
 
 export async function listTutorsController(request: FastifyRequest, reply: FastifyReply) {
   const query = listTutorsQuerySchema.parse(request.query)
+  const { clinicId } = request.user
   const useCase = makeListTutorsUseCase()
-  const result = await useCase.execute(query)
+  const result = await useCase.execute({ ...query, clinicId })
   return reply.status(200).send(result)
 }

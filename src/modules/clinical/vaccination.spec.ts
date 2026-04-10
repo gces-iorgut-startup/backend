@@ -27,6 +27,7 @@ describe('Vaccinations Use Cases', () => {
       name: 'Rex',
       species: 'Dog',
       tutorId: 'tutor-1',
+      clinicId: 'clinic-1',
     })
 
     const vaccination = await addVaccinationUseCase.execute({
@@ -45,6 +46,7 @@ describe('Vaccinations Use Cases', () => {
       name: 'Rex',
       species: 'Dog',
       tutorId: 'tutor-1',
+      clinicId: 'clinic-1',
     })
 
     await expect(addVaccinationUseCase.execute({
@@ -60,6 +62,7 @@ describe('Vaccinations Use Cases', () => {
       name: 'Rex',
       species: 'Dog',
       tutorId: 'tutor-1',
+      clinicId: 'clinic-1',
     })
 
     await addVaccinationUseCase.execute({
@@ -85,6 +88,7 @@ describe('Vaccinations Use Cases', () => {
       name: 'Rex',
       species: 'Dog',
       tutorId: 'tutor-1',
+      clinicId: 'clinic-1',
     })
 
     const applied = await addVaccinationUseCase.execute({

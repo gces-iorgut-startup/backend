@@ -16,6 +16,7 @@ export async function googleAuthController(request: FastifyRequest, reply: Fasti
   const jwtToken = await reply.jwtSign({
     userId: result.user.id,
     role: result.user.role as Role,
+    clinicId: result.user.clinicId,
   })
 
   return reply.status(200).send({

@@ -41,6 +41,7 @@ export class CreateTutorAccountUseCase {
         passwordHash,
         name: tutor.fullName,
         role: 'TUTOR',
+        clinicId: tutor.clinicId,
         tutorAccount: {
           connect: { id: tutorId },
         },

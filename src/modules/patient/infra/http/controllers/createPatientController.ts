@@ -18,7 +18,8 @@ export const createPatientBodySchema = z.object({
 
 export async function createPatientController(request: FastifyRequest, reply: FastifyReply) {
   const body = createPatientBodySchema.parse(request.body)
+  const { clinicId } = request.user
   const useCase = makeCreatePatientUseCase()
-  const patient = await useCase.execute(body)
+  const patient = await useCase.execute({ ...body, clinicId })
   return reply.status(201).send({ patient })
 }

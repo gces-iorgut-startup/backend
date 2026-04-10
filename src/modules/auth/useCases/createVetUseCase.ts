@@ -1,27 +1,25 @@
 import { Errors } from '../../../core/errors'
 import type { IUsersRepository } from '../repositories/IUsersRepository'
 import type { IHashProvider } from '../providers/IHashProvider'
-import type { Role } from '@prisma/client'
 
-interface CreateUserInput {
+interface CreateVetInput {
   email: string
   password: string
   name: string
-  role: Role
-  clinicId: string
+  clinicId: string // extraído do JWT do OWNER
 }
 
-interface CreateUserOutput {
+interface CreateVetOutput {
   id: string; email: string; name: string; role: string
 }
 
-export class CreateUserUseCase {
+export class CreateVetUseCase {
   constructor(
     private usersRepository: IUsersRepository,
     private hashProvider: IHashProvider,
   ) {}
 
-  async execute(input: CreateUserInput): Promise<CreateUserOutput> {
+  async execute(input: CreateVetInput): Promise<CreateVetOutput> {
     const exists = await this.usersRepository.existsByEmail(input.email)
     if (exists) throw Errors.conflict('E-mail já cadastrado')
 
@@ -30,7 +28,7 @@ export class CreateUserUseCase {
       email: input.email.toLowerCase().trim(),
       passwordHash,
       name: input.name.trim(),
-      role: input.role,
+      role: 'VET',
       clinicId: input.clinicId,
     })
 

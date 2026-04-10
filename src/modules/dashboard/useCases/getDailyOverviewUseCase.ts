@@ -6,6 +6,7 @@ interface GetDailyOverviewRequest {
   date: Date
   vetId: string
   userId: string
+  clinicId: string
 }
 
 export class GetDailyOverviewUseCase {
@@ -14,7 +15,7 @@ export class GetDailyOverviewUseCase {
     private usersRepository: IUsersRepository
   ) {}
 
-  async execute({ date, vetId, userId }: GetDailyOverviewRequest): Promise<DailyOverview> {
+  async execute({ date, vetId, userId, clinicId }: GetDailyOverviewRequest): Promise<DailyOverview> {
     const requester = await this.usersRepository.findById(userId)
 
     if (!requester) {
@@ -27,6 +28,6 @@ export class GetDailyOverviewUseCase {
       throw new AppError('Acesso negado. Apenas o proprietário pode ver os dados de outros profissionais.', 403)
     }
 
-    return this.dashboardRepository.getDailyOverview(date, vetId)
+    return this.dashboardRepository.getDailyOverview(date, vetId, clinicId)
   }
 }

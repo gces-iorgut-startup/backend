@@ -6,15 +6,21 @@ import { UpdatePatientUseCase } from './updatePatientUseCase'
 import { InMemoryPatientsRepository } from '../repositories/in-memory/InMemoryPatientsRepository'
 import { InMemoryTutorsRepository } from '../../tutor/repositories/in-memory/InMemoryTutorsRepository'
 
+const CLINIC_ID = 'clinic-1'
+
+const makeTutorInput = (overrides = {}) => ({
+  clinicId: CLINIC_ID, fullName: 'Maria', cpf: '12345678901', phone: '61999990000', ...overrides,
+})
+
 const makeInput = (overrides = {}) => ({
-  name: 'Rex', tutorId: 'tutor-fixo', species: 'Cachorro', breed: 'Labrador', ...overrides,
+  clinicId: CLINIC_ID, name: 'Rex', tutorId: 'tutor-fixo', species: 'Cachorro', breed: 'Labrador', ...overrides,
 })
 
 describe('CreatePatientUseCase', () => {
   it('deve criar paciente quando o tutor existe', async () => {
     const patientsRepo = new InMemoryPatientsRepository()
     const tutorsRepo = new InMemoryTutorsRepository()
-    const tutor = await tutorsRepo.create({ fullName: 'Maria', cpf: '12345678901', phone: '61999' })
+    const tutor = await tutorsRepo.create(makeTutorInput())
     const sut = new CreatePatientUseCase(patientsRepo, tutorsRepo)
 
     const patient = await sut.execute(makeInput({ tutorId: tutor.id }))
@@ -56,21 +62,23 @@ describe('ListPatientsUseCase', () => {
     await patientsRepo.create(makeInput({ name: 'Rex', tutorId: 'tutor-1' }))
     await patientsRepo.create(makeInput({ name: 'Mel', tutorId: 'tutor-1' }))
     await patientsRepo.create(makeInput({ name: 'Bob', tutorId: 'tutor-2' }))
+    // Paciente de outra clínica — não deve aparecer
+    await patientsRepo.create(makeInput({ name: 'Alien', tutorId: 'tutor-3', clinicId: 'clinic-2' }))
   })
 
-  it('deve listar todos os pacientes', async () => {
-    const result = await new ListPatientsUseCase(patientsRepo).execute({})
+  it('deve listar apenas pacientes da clínica correta', async () => {
+    const result = await new ListPatientsUseCase(patientsRepo).execute({ clinicId: CLINIC_ID })
     expect(result.total).toBe(3)
   })
 
   it('deve filtrar por nome (search)', async () => {
-    const result = await new ListPatientsUseCase(patientsRepo).execute({ search: 'rex' })
+    const result = await new ListPatientsUseCase(patientsRepo).execute({ clinicId: CLINIC_ID, search: 'rex' })
     expect(result.total).toBe(1)
     expect(result.patients[0].name).toBe('Rex')
   })
 
   it('deve filtrar por tutorId', async () => {
-    const result = await new ListPatientsUseCase(patientsRepo).execute({ tutorId: 'tutor-1' })
+    const result = await new ListPatientsUseCase(patientsRepo).execute({ clinicId: CLINIC_ID, tutorId: 'tutor-1' })
     expect(result.total).toBe(2)
   })
 })
@@ -79,7 +87,7 @@ describe('UpdatePatientUseCase', () => {
   it('deve atualizar o nome do paciente', async () => {
     const patientsRepo = new InMemoryPatientsRepository()
     const tutorsRepo = new InMemoryTutorsRepository()
-    const tutor = await tutorsRepo.create({ fullName: 'Maria', cpf: '12345678901', phone: '61999990000' })
+    const tutor = await tutorsRepo.create(makeTutorInput())
     await patientsRepo.create(makeInput({ tutorId: tutor.id }))
     const updated = await new UpdatePatientUseCase(patientsRepo, tutorsRepo)
       .execute({ id: patientsRepo.items[0].id, name: 'Rex Jr.' })
@@ -89,16 +97,13 @@ describe('UpdatePatientUseCase', () => {
   it('deve atualizar dados do tutor junto com o paciente', async () => {
     const patientsRepo = new InMemoryPatientsRepository()
     const tutorsRepo = new InMemoryTutorsRepository()
-    const tutor = await tutorsRepo.create({ fullName: 'Maria', cpf: '12345678901', phone: '61999990000' })
+    const tutor = await tutorsRepo.create(makeTutorInput())
     await patientsRepo.create(makeInput({ tutorId: tutor.id }))
 
     const updated = await new UpdatePatientUseCase(patientsRepo, tutorsRepo).execute({
       id: patientsRepo.items[0].id,
       observations: 'Alergia a cenoura',
-      tutor: {
-        fullName: 'Maria Souza',
-        phone: '61988887777',
-      },
+      tutor: { fullName: 'Maria Souza', phone: '61988887777' },
     })
 
     expect(updated.observations).toBe('Alergia a cenoura')
@@ -110,8 +115,8 @@ describe('UpdatePatientUseCase', () => {
     const patientsRepo = new InMemoryPatientsRepository()
     const tutorsRepo = new InMemoryTutorsRepository()
 
-    const tutorDoPaciente = await tutorsRepo.create({ fullName: 'Maria', cpf: '12345678901', phone: '61999990000' })
-    await tutorsRepo.create({ fullName: 'João', cpf: '99999999999', phone: '61977776666' })
+    const tutorDoPaciente = await tutorsRepo.create(makeTutorInput())
+    await tutorsRepo.create(makeTutorInput({ fullName: 'João', cpf: '99999999999' }))
     await patientsRepo.create(makeInput({ tutorId: tutorDoPaciente.id }))
 
     await expect(

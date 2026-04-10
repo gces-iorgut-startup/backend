@@ -13,6 +13,6 @@ export interface AdminMetrics {
 }
 
 export interface IDashboardRepository {
-  getDailyOverview(date: Date, vetId?: string): Promise<DailyOverview>
-  getAdminMetrics(): Promise<AdminMetrics>
+  getDailyOverview(date: Date, vetId?: string, clinicId?: string): Promise<DailyOverview>
+  getAdminMetrics(clinicId: string): Promise<AdminMetrics>
 }

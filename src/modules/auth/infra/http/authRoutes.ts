@@ -1,19 +1,33 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
-import { createUserController, createUserBodySchema } from './controllers/createUserController'
+import { registerOwnerController, registerOwnerBodySchema } from './controllers/registerOwnerController'
+import { registerVetController, registerVetBodySchema } from './controllers/registerVetController'
 import { authenticateController, authenticateBodySchema } from './controllers/authenticateController'
 import { refreshTokenController, refreshTokenBodySchema } from './controllers/refreshTokenController'
 import { logoutController } from './controllers/logoutController'
 import { googleAuthController, googleAuthBodySchema } from './controllers/googleAuthController'
 import { verifyJwt } from '@shared/middleware/verify-jwt'
+import { verifyRole } from '@shared/middleware/verify-role'
 
 export const authRoutes: FastifyPluginAsyncZod = async (app) => {
+  // Registro de OWNER (cria clínica automaticamente)
   app.post('/register', {
     schema: {
       tags: ['Auth'],
-      summary: 'Criar uma nova conta (Dono ou Veterinário)',
-      body: createUserBodySchema,
+      summary: 'Criar conta de Dono de Clínica (cria a clínica automaticamente)',
+      body: registerOwnerBodySchema,
     },
-  }, createUserController)
+  }, registerOwnerController)
+
+  // Registro de VET (apenas OWNER pode criar VETs na sua clínica)
+  app.post('/register/vet', {
+    preHandler: [verifyJwt, verifyRole('OWNER')],
+    schema: {
+      tags: ['Auth'],
+      summary: 'Criar conta de Veterinário (apenas OWNER)',
+      body: registerVetBodySchema,
+      security: [{ bearerAuth: [] }],
+    },
+  }, registerVetController)
 
   app.post('/login', {
     schema: {
@@ -43,7 +57,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post('/google', {
     schema: {
       tags: ['Auth'],
-      summary: 'Login / Registro com Google (envia o idToken obtido pelo frontend)',
+      summary: 'Login / Registro com Google',
       body: googleAuthBodySchema,
     },
   }, googleAuthController)

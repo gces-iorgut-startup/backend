@@ -1,5 +1,6 @@
 import { randomBytes } from 'crypto'
 import { AppError } from '../../../shared/errors/app-error'
+import { prisma } from '@config/prisma'
 import type { IUsersRepository } from '../repositories/IUsersRepository'
 import type { IRefreshTokensRepository } from '../repositories/IRefreshTokensRepository'
 
@@ -10,7 +11,7 @@ interface GoogleAuthInput {
 }
 
 interface GoogleAuthOutput {
-  user: { id: string; name: string; email: string; role: string }
+  user: { id: string; name: string; email: string; role: string; clinicId: string }
   refreshToken: string
   isNewUser: boolean
 }
@@ -50,13 +51,17 @@ export class GoogleAuthUseCase {
     let user = await this.usersRepository.findByEmail(googleUser.email.toLowerCase())
 
     if (!user) {
-      // Senha aleatória — conta só pode logar via Google
+      // Novo usuário Google: cria uma clínica automaticamente com nome provisório
+      const clinic = await prisma.clinic.create({
+        data: { name: `Clínica de ${googleUser.name ?? googleUser.email.split('@')[0]}` },
+      })
       const dummyPassword = randomBytes(32).toString('hex')
       user = await this.usersRepository.create({
         email: googleUser.email.toLowerCase(),
         passwordHash: dummyPassword,
         name: googleUser.name ?? googleUser.email.split('@')[0],
-        role: 'VET', // papel padrão para novos usuários Google
+        role: 'OWNER', // primeiro usuário de uma clínica Google é OWNER
+        clinicId: clinic.id,
       })
       isNewUser = true
     }
@@ -73,7 +78,7 @@ export class GoogleAuthUseCase {
     })
 
     return {
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, clinicId: user.clinicId },
       refreshToken: tokenValue,
       isNewUser,
     }

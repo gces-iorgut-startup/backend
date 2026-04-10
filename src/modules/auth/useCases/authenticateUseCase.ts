@@ -11,7 +11,7 @@ interface AuthenticateInput {
 }
 
 interface AuthenticateOutput {
-  user: { id: string; name: string; email: string; role: string }
+  user: { id: string; name: string; email: string; role: string; clinicId: string }
   refreshToken: string
 }
 
@@ -36,7 +36,7 @@ export class AuthenticateUseCase {
     await this.refreshTokensRepository.create({ token: tokenValue, userId: user.id, expiresAt })
 
     return {
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, clinicId: user.clinicId },
       refreshToken: tokenValue,
     }
   }

@@ -13,7 +13,7 @@ describe('RefreshTokenUseCase', () => {
     usersRepository = new InMemoryUsersRepository()
     refreshTokensRepository = new InMemoryRefreshTokensRepository()
     sut = new RefreshTokenUseCase(usersRepository, refreshTokensRepository)
-    const user = await usersRepository.create({ name: 'Dr. Gustavo', email: 'g@g.com', passwordHash: 'hash', role: 'OWNER' })
+    const user = await usersRepository.create({ name: 'Dr. Gustavo', email: 'g@g.com', passwordHash: 'hash', role: 'OWNER', clinicId: 'clinic-1' })
     userId = user.id
   })
 
