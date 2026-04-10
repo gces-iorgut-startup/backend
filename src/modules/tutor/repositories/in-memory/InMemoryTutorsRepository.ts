@@ -32,8 +32,12 @@ export class InMemoryTutorsRepository implements ITutorsRepository {
     return this.items.find(t => t.id === id) ?? null
   }
 
-  async findByCpf(cpf: string, clinicId: string): Promise<Tutor | null> {
-    return this.items.find(t => t.cpf === cpf && t.clinicId === clinicId) ?? null
+  async findByCpf(cpf: string): Promise<Tutor | null> {
+    return this.items.find(t => t.cpf === cpf) ?? null
+  }
+
+  async findByEmail(email: string): Promise<Tutor | null> {
+    return this.items.find(t => t.email === email) ?? null
   }
 
   async list({ clinicId, search, page = 1, perPage = 20 }: ListTutorsDTO): Promise<{ tutors: Tutor[]; total: number }> {

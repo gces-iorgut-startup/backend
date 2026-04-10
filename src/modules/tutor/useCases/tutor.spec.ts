@@ -20,19 +20,11 @@ describe('CreateTutorUseCase', () => {
     expect(tutor.fullName).toBe('Maria Silva')
   })
 
-  it('não deve criar tutor com CPF duplicado na mesma clínica (409)', async () => {
+  it('não deve criar tutor com CPF duplicado no sistema (409)', async () => {
     const repo = new InMemoryTutorsRepository()
     const sut = new CreateTutorUseCase(repo)
     await sut.execute(makeInput())
     await expect(sut.execute(makeInput())).rejects.toMatchObject({ statusCode: 409 })
-  })
-
-  it('deve permitir mesmo CPF em clínicas diferentes', async () => {
-    const repo = new InMemoryTutorsRepository()
-    const sut = new CreateTutorUseCase(repo)
-    await sut.execute(makeInput({ clinicId: 'clinic-1' }))
-    const tutor2 = await sut.execute(makeInput({ clinicId: 'clinic-2' }))
-    expect(tutor2.id).toBeDefined()
   })
 })
 
@@ -82,7 +74,7 @@ describe('UpdateTutorUseCase', () => {
     expect(updated.phone).toBe('61988880000')
   })
 
-  it('deve lançar 409 ao atualizar para CPF já cadastrado na mesma clínica', async () => {
+  it('deve lançar 409 ao atualizar para CPF já cadastrado', async () => {
     const repo = new InMemoryTutorsRepository()
     const tutorA = await repo.create(makeInput({ cpf: '11111111111' }))
     await repo.create(makeInput({ cpf: '22222222222' }))

@@ -14,8 +14,13 @@ export class UpdateTutorUseCase {
     if (!tutor) throw Errors.notFound('Tutor não encontrado')
 
     if (data.cpf && data.cpf !== tutor.cpf) {
-      const existingTutor = await this.tutorsRepository.findByCpf(data.cpf, tutor.clinicId)
-      if (existingTutor) throw Errors.conflict('CPF já cadastrado')
+      const existingTutor = await this.tutorsRepository.findByCpf(data.cpf)
+      if (existingTutor) throw Errors.conflict('CPF já cadastrado no sistema')
+    }
+
+    if (data.email && data.email !== tutor.email) {
+      const existingEmail = await this.tutorsRepository.findByEmail(data.email)
+      if (existingEmail) throw Errors.conflict('E-mail já cadastrado no sistema')
     }
 
     return this.tutorsRepository.update(id, data)
