@@ -38,7 +38,7 @@ export const patientRoutes: FastifyPluginAsyncZod = async (app) => {
   app.put('/:id', {
     schema: {
       tags: ['Patients'],
-      summary: 'Atualizar dados de um paciente',
+      summary: 'Atualizar dados de um paciente e, opcionalmente, do tutor vinculado',
       security: [{ bearerAuth: [] }],
       params: getPatientParamsSchema,
       body: updatePatientBodySchema,

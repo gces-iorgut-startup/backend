@@ -12,6 +12,12 @@ export class UpdateTutorUseCase {
   async execute({ id, ...data }: UpdateTutorInput): Promise<Tutor> {
     const tutor = await this.tutorsRepository.findById(id)
     if (!tutor) throw Errors.notFound('Tutor não encontrado')
+
+    if (data.cpf && data.cpf !== tutor.cpf) {
+      const existingTutor = await this.tutorsRepository.findByCpf(data.cpf)
+      if (existingTutor) throw Errors.conflict('CPF já cadastrado')
+    }
+
     return this.tutorsRepository.update(id, data)
   }
 }

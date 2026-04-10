@@ -12,6 +12,7 @@ export interface CreateTutorDTO {
 }
 
 export interface UpdateTutorDTO {
+  cpf?: string
   fullName?: string
   phone?: string
   email?: string

@@ -69,6 +69,16 @@ describe('UpdateTutorUseCase', () => {
     expect(updated.phone).toBe('61988880000')
   })
 
+  it('deve lançar 409 ao atualizar para CPF já cadastrado', async () => {
+    const repo = new InMemoryTutorsRepository()
+    const tutorA = await repo.create(makeInput({ cpf: '11111111111' }))
+    await repo.create(makeInput({ cpf: '22222222222' }))
+
+    await expect(
+      new UpdateTutorUseCase(repo).execute({ id: tutorA.id, cpf: '22222222222' }),
+    ).rejects.toMatchObject({ statusCode: 409 })
+  })
+
   it('deve lançar 404 para tutor inexistente', async () => {
     await expect(new UpdateTutorUseCase(new InMemoryTutorsRepository()).execute({ id: 'id-fake' })).rejects.toMatchObject({ statusCode: 404 })
   })

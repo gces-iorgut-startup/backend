@@ -13,6 +13,14 @@ export const updatePatientBodySchema = z.object({
   microchip: z.string().optional(),
   allergies: z.string().optional(),
   photoUrl: z.string().optional(),
+  tutor: z.object({
+    cpf: z.string().length(11).optional(),
+    fullName: z.string().min(2).optional(),
+    phone: z.string().min(10).optional(),
+    email: z.string().email().optional(),
+    address: z.string().optional(),
+    insurance: z.string().optional(),
+  }).optional(),
 })
 
 export async function updatePatientController(

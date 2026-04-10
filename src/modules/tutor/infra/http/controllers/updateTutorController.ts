@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { makeUpdateTutorUseCase } from '../../../useCases/factories/makeUpdateTutorUseCase'
 
 export const updateTutorBodySchema = z.object({
+  cpf: z.string().length(11).optional(),
   fullName: z.string().min(2).optional(),
   phone: z.string().min(10).optional(),
   email: z.string().email().optional(),
