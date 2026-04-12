@@ -8,7 +8,7 @@ export const updatePatientBodySchema = z.object({
   breed: z.string().optional(),
   birthDate: z.coerce.date().optional(),
   sex: z.string().optional(),
-  weightKg: z.number().optional(),
+  weightKg: z.number().max(999.99).optional(),
   observations: z.string().optional(),
   microchip: z.string().optional(),
   allergies: z.string().optional(),
