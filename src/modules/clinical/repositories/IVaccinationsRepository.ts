@@ -13,6 +13,6 @@ export interface CreateVaccinationDTO {
 export interface IVaccinationsRepository {
   create(data: CreateVaccinationDTO): Promise<Vaccination>
   listByPatient(patientId: string): Promise<Vaccination[]>
-  findById(id: string): Promise<Vaccination | null>
+  findById(id: string, clinicId: string): Promise<Vaccination | null>
   updateStatus(id: string, status: VaccinationStatus): Promise<Vaccination>
 }

@@ -11,8 +11,8 @@ export class PrismaClinicalRecordsRepository implements IClinicalRecordsReposito
     return prisma.clinicalRecord.create({ data })
   }
 
-  async findById(id: string): Promise<ClinicalRecord | null> {
-    return prisma.clinicalRecord.findUnique({ where: { id } })
+  async findById(id: string, clinicId: string): Promise<ClinicalRecord | null> {
+    return prisma.clinicalRecord.findFirst({ where: { id, patient: { clinicId } } })
   }
 
   async findByAppointmentId(appointmentId: string): Promise<ClinicalRecord | null> {

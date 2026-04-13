@@ -4,6 +4,10 @@ import type { IPatientsRepository } from '../../patient/repositories/IPatientsRe
 import type { IUsersRepository } from '../../auth/repositories/IUsersRepository'
 import type { Appointment } from '@prisma/client'
 
+interface CreateAppointmentRequest extends CreateAppointmentDTO {
+  clinicId: string
+}
+
 export class CreateAppointmentUseCase {
   constructor(
     private appointmentsRepository: IAppointmentsRepository,
@@ -11,9 +15,9 @@ export class CreateAppointmentUseCase {
     private usersRepository: IUsersRepository,
   ) {}
 
-  async execute(input: CreateAppointmentDTO): Promise<Appointment> {
+  async execute(input: CreateAppointmentRequest): Promise<Appointment> {
     const [patient, vet] = await Promise.all([
-      this.patientsRepository.findById(input.patientId),
+      this.patientsRepository.findById(input.patientId, input.clinicId),
       this.usersRepository.findById(input.vetId),
     ])
 

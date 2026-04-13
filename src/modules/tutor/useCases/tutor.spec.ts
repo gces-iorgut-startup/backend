@@ -20,11 +20,19 @@ describe('CreateTutorUseCase', () => {
     expect(tutor.fullName).toBe('Maria Silva')
   })
 
-  it('não deve criar tutor com CPF duplicado no sistema (409)', async () => {
+  it('não deve criar tutor com CPF duplicado na mesma clínica (409)', async () => {
     const repo = new InMemoryTutorsRepository()
     const sut = new CreateTutorUseCase(repo)
     await sut.execute(makeInput())
     await expect(sut.execute(makeInput())).rejects.toMatchObject({ statusCode: 409 })
+  })
+
+  it('deve permitir mesmo CPF em clínicas diferentes', async () => {
+    const repo = new InMemoryTutorsRepository()
+    const sut = new CreateTutorUseCase(repo)
+    await sut.execute(makeInput({ clinicId: 'clinic-1' }))
+    const tutor2 = await sut.execute(makeInput({ clinicId: 'clinic-2' }))
+    expect(tutor2.id).toBeDefined()
   })
 })
 
@@ -32,12 +40,12 @@ describe('GetTutorUseCase', () => {
   it('deve retornar o tutor pelo id', async () => {
     const repo = new InMemoryTutorsRepository()
     const created = await repo.create(makeInput())
-    const tutor = await new GetTutorUseCase(repo).execute(created.id)
+    const tutor = await new GetTutorUseCase(repo).execute({ id: created.id, clinicId: CLINIC_ID })
     expect(tutor.id).toBe(created.id)
   })
 
   it('deve lançar 404 para id inexistente', async () => {
-    await expect(new GetTutorUseCase(new InMemoryTutorsRepository()).execute('id-fake')).rejects.toMatchObject({ statusCode: 404 })
+    await expect(new GetTutorUseCase(new InMemoryTutorsRepository()).execute({ id: 'id-fake', clinicId: CLINIC_ID })).rejects.toMatchObject({ statusCode: 404 })
   })
 })
 
@@ -70,21 +78,21 @@ describe('UpdateTutorUseCase', () => {
   it('deve atualizar o telefone do tutor', async () => {
     const repo = new InMemoryTutorsRepository()
     const created = await repo.create(makeInput())
-    const updated = await new UpdateTutorUseCase(repo).execute({ id: created.id, phone: '61988880000' })
+    const updated = await new UpdateTutorUseCase(repo).execute({ id: created.id, clinicId: CLINIC_ID, phone: '61988880000' })
     expect(updated.phone).toBe('61988880000')
   })
 
-  it('deve lançar 409 ao atualizar para CPF já cadastrado', async () => {
+  it('deve lançar 409 ao atualizar para CPF já cadastrado na mesma clínica', async () => {
     const repo = new InMemoryTutorsRepository()
     const tutorA = await repo.create(makeInput({ cpf: '11111111111' }))
     await repo.create(makeInput({ cpf: '22222222222' }))
 
     await expect(
-      new UpdateTutorUseCase(repo).execute({ id: tutorA.id, cpf: '22222222222' }),
+      new UpdateTutorUseCase(repo).execute({ id: tutorA.id, clinicId: CLINIC_ID, cpf: '22222222222' }),
     ).rejects.toMatchObject({ statusCode: 409 })
   })
 
   it('deve lançar 404 para tutor inexistente', async () => {
-    await expect(new UpdateTutorUseCase(new InMemoryTutorsRepository()).execute({ id: 'id-fake' })).rejects.toMatchObject({ statusCode: 404 })
+    await expect(new UpdateTutorUseCase(new InMemoryTutorsRepository()).execute({ id: 'id-fake', clinicId: CLINIC_ID })).rejects.toMatchObject({ statusCode: 404 })
   })
 })

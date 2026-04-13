@@ -12,12 +12,14 @@ export async function finalizeClinicalRecordController(
 ) {
   const { id } = request.params
   const vetId = request.user.userId
+  const clinicId = request.user.clinicId
 
   const useCase = makeFinalizeClinicalRecordUseCase()
 
   const record = await useCase.execute({
     recordId: id,
     vetId,
+    clinicId,
   })
 
   return reply.status(200).send(record)

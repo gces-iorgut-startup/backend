@@ -27,8 +27,9 @@ export async function updatePatientController(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,
 ) {
+  const { clinicId } = request.user
   const body = updatePatientBodySchema.parse(request.body)
   const useCase = makeUpdatePatientUseCase()
-  const patient = await useCase.execute({ id: request.params.id, ...body })
+  const patient = await useCase.execute({ id: request.params.id, clinicId, ...body })
   return reply.status(200).send({ patient })
 }

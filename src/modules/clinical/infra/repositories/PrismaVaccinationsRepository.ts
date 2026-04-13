@@ -13,8 +13,8 @@ export class PrismaVaccinationsRepository implements IVaccinationsRepository {
     })
   }
 
-  async findById(id: string): Promise<Vaccination | null> {
-    return prisma.vaccination.findUnique({ where: { id } })
+  async findById(id: string, clinicId: string): Promise<Vaccination | null> {
+    return prisma.vaccination.findFirst({ where: { id, patient: { clinicId } } })
   }
 
   async updateStatus(id: string, status: VaccinationStatus): Promise<Vaccination> {

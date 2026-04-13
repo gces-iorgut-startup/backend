@@ -25,7 +25,7 @@ describe('CreateAppointmentUseCase', () => {
     const { appointmentsRepo, patientsRepo, usersRepo, patientId, vetId } = await setupRepos()
     const sut = new CreateAppointmentUseCase(appointmentsRepo, patientsRepo, usersRepo)
 
-    const result = await sut.execute({ patientId, vetId, dateTime: new Date('2026-04-01T10:00:00'), category: 'VACCINATION' })
+    const result = await sut.execute({ patientId, vetId, clinicId: CLINIC_ID, dateTime: new Date('2026-04-01T10:00:00'), category: 'VACCINATION' })
 
     expect(result.id).toBeDefined()
     expect(result.status).toBe('SCHEDULED')
@@ -35,7 +35,7 @@ describe('CreateAppointmentUseCase', () => {
     const { appointmentsRepo, patientsRepo, usersRepo, patientId, vetId } = await setupRepos()
     const sut = new CreateAppointmentUseCase(appointmentsRepo, patientsRepo, usersRepo)
 
-    const result = await sut.execute({ patientId, vetId, dateTime: new Date('2026-04-01T14:00:00'), category: 'EXAM', observation: 'Exame de sangue' })
+    const result = await sut.execute({ patientId, vetId, clinicId: CLINIC_ID, dateTime: new Date('2026-04-01T14:00:00'), category: 'EXAM', observation: 'Exame de sangue' })
     expect(result.category).toBe('EXAM')
   })
 
@@ -43,14 +43,14 @@ describe('CreateAppointmentUseCase', () => {
     const { appointmentsRepo, patientsRepo, usersRepo, vetId } = await setupRepos()
     const sut = new CreateAppointmentUseCase(appointmentsRepo, patientsRepo, usersRepo)
 
-    await expect(sut.execute({ patientId: 'id-fake', vetId, dateTime: new Date(), category: 'OBSERVATION' })).rejects.toMatchObject({ statusCode: 404 })
+    await expect(sut.execute({ patientId: 'id-fake', clinicId: CLINIC_ID, vetId, dateTime: new Date(), category: 'OBSERVATION' })).rejects.toMatchObject({ statusCode: 404 })
   })
 
   it('deve lançar 404 para veterinário inexistente', async () => {
     const { appointmentsRepo, patientsRepo, usersRepo, patientId } = await setupRepos()
     const sut = new CreateAppointmentUseCase(appointmentsRepo, patientsRepo, usersRepo)
 
-    await expect(sut.execute({ patientId, vetId: 'id-fake', dateTime: new Date(), category: 'OBSERVATION' })).rejects.toMatchObject({ statusCode: 404 })
+    await expect(sut.execute({ patientId, vetId: 'id-fake', clinicId: CLINIC_ID, dateTime: new Date(), category: 'OBSERVATION' })).rejects.toMatchObject({ statusCode: 404 })
   })
 })
 
@@ -65,18 +65,18 @@ describe('ListAppointmentsByDayUseCase', () => {
   })
 
   it('deve retornar apenas os agendamentos do dia informado', async () => {
-    const result = await new ListAppointmentsByDayUseCase(appointmentsRepo).execute({ date: '2026-04-01' })
+    const result = await new ListAppointmentsByDayUseCase(appointmentsRepo).execute({ date: '2026-04-01', clinicId: CLINIC_ID })
     expect(result).toHaveLength(2)
   })
 
   it('deve filtrar por vetId dentro do dia', async () => {
-    const result = await new ListAppointmentsByDayUseCase(appointmentsRepo).execute({ date: '2026-04-01', vetId: 'v1' })
+    const result = await new ListAppointmentsByDayUseCase(appointmentsRepo).execute({ date: '2026-04-01', clinicId: CLINIC_ID, vetId: 'v1' })
     expect(result).toHaveLength(1)
     expect(result[0].vetId).toBe('v1')
   })
 
   it('deve retornar array vazio para dia sem agendamentos', async () => {
-    const result = await new ListAppointmentsByDayUseCase(appointmentsRepo).execute({ date: '2099-01-01' })
+    const result = await new ListAppointmentsByDayUseCase(appointmentsRepo).execute({ date: '2099-01-01', clinicId: CLINIC_ID })
     expect(result).toHaveLength(0)
   })
 })
@@ -89,10 +89,10 @@ describe('CancelAppointmentUseCase', () => {
     const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'Cachorro', clinicId: CLINIC_ID })
     const vet = await uRepo.create({ name: 'Dr. Vet', email: 'vet2@g.com', passwordHash: 'x', role: 'VET', clinicId: CLINIC_ID })
     const appointment = await new CreateAppointmentUseCase(aRepo, pRepo, uRepo).execute({
-      patientId: patient.id, vetId: vet.id,
+      patientId: patient.id, vetId: vet.id, clinicId: CLINIC_ID,
       dateTime: new Date('2099-01-01T10:00:00'), category: 'OBSERVATION',
     })
-    const result = await new CancelAppointmentUseCase(aRepo).execute({ appointmentId: appointment.id, reason: 'Paciente não compareceu' })
+    const result = await new CancelAppointmentUseCase(aRepo).execute({ appointmentId: appointment.id, clinicId: CLINIC_ID, reason: 'Paciente não compareceu' })
     expect(result.status).toBe('CANCELLED')
     expect(result.cancelReason).toBe('Paciente não compareceu')
   })
@@ -104,10 +104,10 @@ describe('CancelAppointmentUseCase', () => {
     const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'Cachorro', clinicId: CLINIC_ID })
     const vet = await uRepo.create({ name: 'Dr. Vet', email: 'vet3@g.com', passwordHash: 'x', role: 'VET', clinicId: CLINIC_ID })
     const appointment = await new CreateAppointmentUseCase(aRepo, pRepo, uRepo).execute({
-      patientId: patient.id, vetId: vet.id,
+      patientId: patient.id, vetId: vet.id, clinicId: CLINIC_ID,
       dateTime: new Date('2099-01-01T10:00:00'), category: 'OBSERVATION',
     })
-    await expect(new CancelAppointmentUseCase(aRepo).execute({ appointmentId: appointment.id, reason: 'ok' }))
+    await expect(new CancelAppointmentUseCase(aRepo).execute({ appointmentId: appointment.id, clinicId: CLINIC_ID, reason: 'ok' }))
       .rejects.toMatchObject({ statusCode: 400 })
   })
 
@@ -118,12 +118,12 @@ describe('CancelAppointmentUseCase', () => {
     const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'Cachorro', clinicId: CLINIC_ID })
     const vet = await uRepo.create({ name: 'Dr. Vet', email: 'vet4@g.com', passwordHash: 'x', role: 'VET', clinicId: CLINIC_ID })
     const appointment = await new CreateAppointmentUseCase(aRepo, pRepo, uRepo).execute({
-      patientId: patient.id, vetId: vet.id,
+      patientId: patient.id, vetId: vet.id, clinicId: CLINIC_ID,
       dateTime: new Date('2099-01-01T10:00:00'), category: 'OBSERVATION',
     })
     const cancelUC = new CancelAppointmentUseCase(aRepo)
-    await cancelUC.execute({ appointmentId: appointment.id, reason: 'Motivo válido aqui' })
-    await expect(cancelUC.execute({ appointmentId: appointment.id, reason: 'Motivo válido aqui' }))
+    await cancelUC.execute({ appointmentId: appointment.id, clinicId: CLINIC_ID, reason: 'Motivo válido aqui' })
+    await expect(cancelUC.execute({ appointmentId: appointment.id, clinicId: CLINIC_ID, reason: 'Motivo válido aqui' }))
       .rejects.toMatchObject({ statusCode: 400 })
   })
 })
@@ -136,12 +136,12 @@ describe('RescheduleAppointmentUseCase', () => {
     const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'Cachorro', clinicId: CLINIC_ID })
     const vet = await uRepo.create({ name: 'Dr. Vet', email: 'vet5@g.com', passwordHash: 'x', role: 'VET', clinicId: CLINIC_ID })
     const appointment = await new CreateAppointmentUseCase(aRepo, pRepo, uRepo).execute({
-      patientId: patient.id, vetId: vet.id,
+      patientId: patient.id, vetId: vet.id, clinicId: CLINIC_ID,
       dateTime: new Date('2099-01-01T10:00:00'), category: 'OBSERVATION',
     })
     const newDate = new Date('2099-06-01T10:00:00')
     const result = await new RescheduleAppointmentUseCase(aRepo).execute({
-      appointmentId: appointment.id, newDateTime: newDate,
+      appointmentId: appointment.id, clinicId: CLINIC_ID, newDateTime: newDate,
     })
     expect(result.dateTime).toEqual(newDate)
   })
@@ -153,12 +153,13 @@ describe('RescheduleAppointmentUseCase', () => {
     const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'Cachorro', clinicId: CLINIC_ID })
     const vet = await uRepo.create({ name: 'Dr. Vet', email: 'vet6@g.com', passwordHash: 'x', role: 'VET', clinicId: CLINIC_ID })
     const appointment = await new CreateAppointmentUseCase(aRepo, pRepo, uRepo).execute({
-      patientId: patient.id, vetId: vet.id,
+      patientId: patient.id, vetId: vet.id, clinicId: CLINIC_ID,
       dateTime: new Date('2099-01-01T10:00:00'), category: 'OBSERVATION',
     })
     await expect(
       new RescheduleAppointmentUseCase(aRepo).execute({
         appointmentId: appointment.id,
+        clinicId: CLINIC_ID,
         newDateTime: new Date('2020-01-01'),
       })
     ).rejects.toMatchObject({ statusCode: 400 })

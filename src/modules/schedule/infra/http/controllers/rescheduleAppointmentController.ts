@@ -19,9 +19,10 @@ export async function rescheduleAppointmentController(
 ) {
   const { id } = request.params
   const { dateTime } = request.body
+  const { clinicId } = request.user
 
   const useCase = makeRescheduleAppointmentUseCase()
-  const appointment = await useCase.execute({ appointmentId: id, newDateTime: new Date(dateTime) })
+  const appointment = await useCase.execute({ appointmentId: id, clinicId, newDateTime: new Date(dateTime) })
 
   return reply.status(200).send(appointment)
 }

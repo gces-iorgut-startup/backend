@@ -6,6 +6,7 @@ import type { ClinicalRecord } from '@prisma/client'
 interface StartClinicalRecordRequest {
   appointmentId: string
   vetId: string
+  clinicId: string
 }
 
 export class StartClinicalRecordUseCase {
@@ -17,8 +18,9 @@ export class StartClinicalRecordUseCase {
   async execute({
     appointmentId,
     vetId,
+    clinicId,
   }: StartClinicalRecordRequest): Promise<ClinicalRecord> {
-    const appointment = await this.appointmentsRepository.findById(appointmentId)
+    const appointment = await this.appointmentsRepository.findById(appointmentId, clinicId)
 
     if (!appointment) {
       throw new AppError('Agendamento não encontrado.', 404)

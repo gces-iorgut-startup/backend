@@ -5,6 +5,7 @@ import type { PatientWithTutor } from '../repositories/IPatientsRepository'
 
 interface UpdatePatientInput extends UpdatePatientDTO {
   id: string
+  clinicId: string
   tutor?: UpdateTutorDTO
 }
 
@@ -14,22 +15,22 @@ export class UpdatePatientUseCase {
     private tutorsRepository: ITutorsRepository,
   ) {}
 
-  async execute({ id, tutor, ...data }: UpdatePatientInput): Promise<PatientWithTutor> {
-    const patient = await this.patientsRepository.findById(id)
+  async execute({ id, clinicId, tutor, ...data }: UpdatePatientInput): Promise<PatientWithTutor> {
+    const patient = await this.patientsRepository.findById(id, clinicId)
     if (!patient) throw Errors.notFound('Paciente não encontrado')
 
     if (tutor) {
       if (tutor.cpf && tutor.cpf !== patient.tutor.cpf) {
-        const existingTutor = await this.tutorsRepository.findByCpf(tutor.cpf)
+        const existingTutor = await this.tutorsRepository.findByCpf(tutor.cpf, patient.tutor.clinicId)
         if (existingTutor && existingTutor.id !== patient.tutorId) {
-          throw Errors.conflict('CPF já cadastrado')
+          throw Errors.conflict('CPF já cadastrado nesta clínica')
         }
       }
 
       if (tutor.email && tutor.email !== patient.tutor.email) {
-        const existingEmail = await this.tutorsRepository.findByEmail(tutor.email)
+        const existingEmail = await this.tutorsRepository.findByEmail(tutor.email, patient.tutor.clinicId)
         if (existingEmail && existingEmail.id !== patient.tutorId) {
-          throw Errors.conflict('E-mail já cadastrado')
+          throw Errors.conflict('E-mail já cadastrado nesta clínica')
         }
       }
 
@@ -38,10 +39,10 @@ export class UpdatePatientUseCase {
 
     await this.patientsRepository.update(id, data)
 
-    const updatedPatient = await this.patientsRepository.findById(id)
+    const updatedPatient = await this.patientsRepository.findById(id, clinicId)
     if (!updatedPatient) throw Errors.notFound('Paciente não encontrado')
 
-    const updatedTutor = await this.tutorsRepository.findById(updatedPatient.tutorId)
+    const updatedTutor = await this.tutorsRepository.findById(updatedPatient.tutorId, clinicId)
     if (!updatedTutor) throw Errors.notFound('Tutor não encontrado')
 
     return {

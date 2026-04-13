@@ -15,10 +15,11 @@ export async function addVaccinationController(
   reply: FastifyReply
 ) {
   const data = request.body
+  const { clinicId } = request.user
 
   const useCase = makeAddVaccinationUseCase()
 
-  const vaccination = await useCase.execute(data)
+  const vaccination = await useCase.execute({ ...data, clinicId })
 
   return reply.status(201).send(vaccination)
 }

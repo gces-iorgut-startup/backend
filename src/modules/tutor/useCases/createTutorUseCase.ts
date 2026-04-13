@@ -16,12 +16,12 @@ export class CreateTutorUseCase {
   constructor(private tutorsRepository: ITutorsRepository) {}
 
   async execute(input: CreateTutorInput): Promise<Tutor> {
-    const existingCpf = await this.tutorsRepository.findByCpf(input.cpf)
-    if (existingCpf) throw Errors.conflict('CPF já cadastrado no sistema')
+    const existingCpf = await this.tutorsRepository.findByCpf(input.cpf, input.clinicId)
+    if (existingCpf) throw Errors.conflict('CPF já cadastrado nesta clínica')
 
     if (input.email) {
-      const existingEmail = await this.tutorsRepository.findByEmail(input.email)
-      if (existingEmail) throw Errors.conflict('E-mail já cadastrado no sistema')
+      const existingEmail = await this.tutorsRepository.findByEmail(input.email, input.clinicId)
+      if (existingEmail) throw Errors.conflict('E-mail já cadastrado nesta clínica')
     }
 
     return this.tutorsRepository.create(input)

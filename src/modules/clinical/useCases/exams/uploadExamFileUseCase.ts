@@ -5,6 +5,7 @@ import type { ExamFile } from '@prisma/client'
 
 interface UploadExamFileRequest {
   patientId: string
+  clinicId: string
   clinicalRecordId?: string
   fileName: string
   fileUrl: string
@@ -19,12 +20,13 @@ export class UploadExamFileUseCase {
 
   async execute({
     patientId,
+    clinicId,
     clinicalRecordId,
     fileName,
     fileUrl,
     fileType,
   }: UploadExamFileRequest): Promise<ExamFile> {
-    const patient = await this.patientsRepository.findById(patientId)
+    const patient = await this.patientsRepository.findById(patientId, clinicId)
 
     if (!patient) {
       throw new AppError('Paciente não encontrado.', 404)

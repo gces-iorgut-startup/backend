@@ -44,13 +44,13 @@ describe('GetPatientUseCase', () => {
 
   it('deve retornar o paciente com tutor incluído', async () => {
     const sut = new GetPatientUseCase(patientsRepo)
-    const patient = await sut.execute(patientsRepo.items[0].id)
+    const patient = await sut.execute({ id: patientsRepo.items[0].id, clinicId: CLINIC_ID })
     expect(patient.name).toBe('Rex')
     expect(patient.tutor).toBeDefined()
   })
 
   it('deve lançar 404 para id inexistente', async () => {
-    await expect(new GetPatientUseCase(patientsRepo).execute('id-fake')).rejects.toMatchObject({ statusCode: 404 })
+    await expect(new GetPatientUseCase(patientsRepo).execute({ id: 'id-fake', clinicId: CLINIC_ID })).rejects.toMatchObject({ statusCode: 404 })
   })
 })
 
@@ -90,7 +90,7 @@ describe('UpdatePatientUseCase', () => {
     const tutor = await tutorsRepo.create(makeTutorInput())
     await patientsRepo.create(makeInput({ tutorId: tutor.id }))
     const updated = await new UpdatePatientUseCase(patientsRepo, tutorsRepo)
-      .execute({ id: patientsRepo.items[0].id, name: 'Rex Jr.' })
+      .execute({ id: patientsRepo.items[0].id, clinicId: CLINIC_ID, name: 'Rex Jr.' })
     expect(updated.name).toBe('Rex Jr.')
   })
 
@@ -102,6 +102,7 @@ describe('UpdatePatientUseCase', () => {
 
     const updated = await new UpdatePatientUseCase(patientsRepo, tutorsRepo).execute({
       id: patientsRepo.items[0].id,
+      clinicId: CLINIC_ID,
       observations: 'Alergia a cenoura',
       tutor: { fullName: 'Maria Souza', phone: '61988887777' },
     })
@@ -122,6 +123,7 @@ describe('UpdatePatientUseCase', () => {
     await expect(
       new UpdatePatientUseCase(patientsRepo, tutorsRepo).execute({
         id: patientsRepo.items[0].id,
+        clinicId: CLINIC_ID,
         tutor: { cpf: '99999999999' },
       }),
     ).rejects.toMatchObject({ statusCode: 409 })
@@ -130,7 +132,7 @@ describe('UpdatePatientUseCase', () => {
   it('deve lançar 404 para paciente inexistente', async () => {
     await expect(
       new UpdatePatientUseCase(new InMemoryPatientsRepository(), new InMemoryTutorsRepository())
-        .execute({ id: 'id-fake' }),
+        .execute({ id: 'id-fake', clinicId: CLINIC_ID }),
     ).rejects.toMatchObject({ statusCode: 404 })
   })
 })

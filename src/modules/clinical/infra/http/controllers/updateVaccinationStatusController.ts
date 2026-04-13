@@ -19,11 +19,13 @@ export async function updateVaccinationStatusController(
 ) {
   const { id } = request.params
   const { status } = request.body
+  const { clinicId } = request.user
 
   const useCase = makeUpdateVaccinationStatusUseCase()
 
   const vaccination = await useCase.execute({
     vaccinationId: id,
+    clinicId,
     status,
   })
 

@@ -10,7 +10,7 @@ export class CreatePatientUseCase {
   ) {}
 
   async execute(input: CreatePatientDTO): Promise<Patient> {
-    const tutor = await this.tutorsRepository.findById(input.tutorId)
+    const tutor = await this.tutorsRepository.findById(input.tutorId, input.clinicId)
     if (!tutor) throw Errors.notFound('Tutor não encontrado')
     return this.patientsRepository.create(input)
   }

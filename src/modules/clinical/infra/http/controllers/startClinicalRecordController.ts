@@ -12,12 +12,14 @@ export async function startClinicalRecordController(
 ) {
   const { appointmentId } = request.body
   const vetId = request.user.userId
+  const clinicId = request.user.clinicId
 
   const useCase = makeStartClinicalRecordUseCase()
 
   const record = await useCase.execute({
     appointmentId,
     vetId,
+    clinicId,
   })
 
   return reply.status(201).send(record)

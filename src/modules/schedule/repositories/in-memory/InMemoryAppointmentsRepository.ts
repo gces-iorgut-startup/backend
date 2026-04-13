@@ -22,15 +22,15 @@ export class InMemoryAppointmentsRepository implements IAppointmentsRepository {
       cancelReason: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-      patient: { id: data.patientId, name: 'Paciente', species: 'Cachorro' },
+      patient: { id: data.patientId, name: 'Paciente', species: 'Cachorro', clinicId: 'clinic-1' },
       vet: { id: data.vetId, name: 'Veterinário' },
     }
     this.items.push(appointment)
     return appointment
   }
 
-  async findById(id: string): Promise<Appointment | null> {
-    return this.items.find(a => a.id === id) ?? null
+  async findById(id: string, clinicId: string): Promise<Appointment | null> {
+    return this.items.find(a => a.id === id && a.patient.clinicId === clinicId) ?? null
   }
 
   async updateStatus(id: string, status: AppointmentStatus): Promise<Appointment> {
@@ -40,12 +40,13 @@ export class InMemoryAppointmentsRepository implements IAppointmentsRepository {
     return this.items[index]
   }
 
-  async listByDay(date: Date, vetId?: string): Promise<AppointmentWithRelations[]> {
+  async listByDay(date: Date, clinicId: string, vetId?: string): Promise<AppointmentWithRelations[]> {
     const dateStr = date.toISOString().slice(0, 10) // 'YYYY-MM-DD'
     return this.items.filter(a => {
       const aDateStr = a.dateTime.toISOString().slice(0, 10)
       return (
         aDateStr === dateStr &&
+        a.patient.clinicId === clinicId &&
         a.status !== AppointmentStatus.CANCELLED &&
         (!vetId || a.vetId === vetId)
       )

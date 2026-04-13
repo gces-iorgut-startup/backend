@@ -37,13 +37,14 @@ describe('Clinical Records Module', () => {
     const record = await startUseCase.execute({
       appointmentId: appointment.id,
       vetId,
+      clinicId: 'clinic-1',
     })
 
     expect(record.id).toBeDefined()
     expect(record.appointmentId).toBe(appointment.id)
     expect(record.patientId).toBe('patient-1')
 
-    const updatedAppt = await appointmentsRepository.findById(appointment.id)
+    const updatedAppt = await appointmentsRepository.findById(appointment.id, 'clinic-1')
     expect(updatedAppt?.status).toBe('IN_PROGRESS')
   })
 
@@ -58,6 +59,7 @@ describe('Clinical Records Module', () => {
     await expect(startUseCase.execute({
       appointmentId: appointment.id,
       vetId: randomUUID(), // different vet
+      clinicId: 'clinic-1',
     })).rejects.toThrow('Apenas o veterinário responsável')
   })
 
@@ -73,11 +75,13 @@ describe('Clinical Records Module', () => {
     const record = await startUseCase.execute({
       appointmentId: appointment.id,
       vetId,
+      clinicId: 'clinic-1',
     })
 
     const updated = await updateUseCase.execute({
       recordId: record.id,
       vetId,
+      clinicId: 'clinic-1',
       data: {
         weightKg: 12.5,
         clinicalNotes: 'Paciente estável',
@@ -100,16 +104,18 @@ describe('Clinical Records Module', () => {
     const record = await startUseCase.execute({
       appointmentId: appointment.id,
       vetId,
+      clinicId: 'clinic-1',
     })
 
     const finalized = await finalizeUseCase.execute({
       recordId: record.id,
       vetId,
+      clinicId: 'clinic-1',
     })
 
     expect(finalized.finalized).toBe(true)
 
-    const appt = await appointmentsRepository.findById(appointment.id)
+    const appt = await appointmentsRepository.findById(appointment.id, 'clinic-1')
     expect(appt?.status).toBe('COMPLETED')
   })
 
@@ -125,13 +131,15 @@ describe('Clinical Records Module', () => {
     const record = await startUseCase.execute({
       appointmentId: appointment.id,
       vetId,
+      clinicId: 'clinic-1',
     })
 
-    await finalizeUseCase.execute({ recordId: record.id, vetId })
+    await finalizeUseCase.execute({ recordId: record.id, vetId, clinicId: 'clinic-1' })
 
     await expect(updateUseCase.execute({
       recordId: record.id,
       vetId,
+      clinicId: 'clinic-1',
       data: { weightKg: 15 },
     })).rejects.toThrow('Não é possível editar um prontuário finalizado')
   })
@@ -144,7 +152,7 @@ describe('Clinical Records Module', () => {
       dateTime: new Date(),
       category: 'OBSERVATION',
     })
-    await startUseCase.execute({ appointmentId: appointment1.id, vetId })
+    await startUseCase.execute({ appointmentId: appointment1.id, vetId, clinicId: 'clinic-1' })
 
     const history = await historyUseCase.execute({ patientId: 'patient-1' })
     expect(history.length).toBe(1)

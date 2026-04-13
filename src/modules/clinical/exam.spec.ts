@@ -28,6 +28,7 @@ describe('Exam Files Use Cases', () => {
 
     const file = await uploadUseCase.execute({
       patientId: patient.id,
+      clinicId: 'clinic-1',
       fileName: 'exam_result.pdf',
       fileUrl: '/uploads/abc-def.pdf',
       fileType: 'pdf',
@@ -40,6 +41,7 @@ describe('Exam Files Use Cases', () => {
   it('should not allow upload for non-existent patient', async () => {
     await expect(uploadUseCase.execute({
       patientId: 'invalid-id',
+      clinicId: 'clinic-1',
       fileName: 'image.png',
       fileUrl: '/uploads/img.png',
       fileType: 'image',
@@ -56,6 +58,7 @@ describe('Exam Files Use Cases', () => {
 
     await uploadUseCase.execute({
       patientId: patient.id,
+      clinicId: 'clinic-1',
       fileName: 'blood_test.pdf',
       fileUrl: '/uploads/blood.pdf',
       fileType: 'pdf',
@@ -63,6 +66,7 @@ describe('Exam Files Use Cases', () => {
 
     await uploadUseCase.execute({
       patientId: patient.id,
+      clinicId: 'clinic-1',
       fileName: 'xray.png',
       fileUrl: '/uploads/xray.png',
       fileType: 'image',

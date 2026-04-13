@@ -49,8 +49,8 @@ export class InMemoryPatientsRepository implements IPatientsRepository {
     return patient
   }
 
-  async findById(id: string): Promise<PatientWithTutor | null> {
-    return this.items.find(p => p.id === id) ?? null
+  async findById(id: string, clinicId: string): Promise<PatientWithTutor | null> {
+    return this.items.find(p => p.id === id && p.clinicId === clinicId) ?? null
   }
 
   async update(id: string, data: UpdatePatientDTO): Promise<Patient> {

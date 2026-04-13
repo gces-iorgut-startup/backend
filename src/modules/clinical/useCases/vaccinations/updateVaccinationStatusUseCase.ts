@@ -4,14 +4,15 @@ import type { Vaccination, VaccinationStatus } from '@prisma/client'
 
 interface UpdateVaccinationStatusRequest {
   vaccinationId: string
+  clinicId: string
   status: VaccinationStatus
 }
 
 export class UpdateVaccinationStatusUseCase {
   constructor(private vaccinationsRepository: IVaccinationsRepository) {}
 
-  async execute({ vaccinationId, status }: UpdateVaccinationStatusRequest): Promise<Vaccination> {
-    const vaccination = await this.vaccinationsRepository.findById(vaccinationId)
+  async execute({ vaccinationId, clinicId, status }: UpdateVaccinationStatusRequest): Promise<Vaccination> {
+    const vaccination = await this.vaccinationsRepository.findById(vaccinationId, clinicId)
 
     if (!vaccination) {
       throw new AppError('Vacina não encontrada.', 404)

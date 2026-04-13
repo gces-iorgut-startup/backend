@@ -26,12 +26,14 @@ export async function updateClinicalRecordController(
   const { id } = request.params
   const data = request.body
   const vetId = request.user.userId
+  const clinicId = request.user.clinicId
 
   const useCase = makeUpdateClinicalRecordUseCase()
 
   const record = await useCase.execute({
     recordId: id,
     vetId,
+    clinicId,
     data,
   })
 

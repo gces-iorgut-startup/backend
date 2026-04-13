@@ -21,7 +21,7 @@ export interface UpdateClinicalRecordDTO {
 
 export interface IClinicalRecordsRepository {
   create(data: CreateClinicalRecordDTO): Promise<ClinicalRecord>
-  findById(id: string): Promise<ClinicalRecord | null>
+  findById(id: string, clinicId: string): Promise<ClinicalRecord | null>
   findByAppointmentId(appointmentId: string): Promise<ClinicalRecord | null>
   update(id: string, data: UpdateClinicalRecordDTO): Promise<ClinicalRecord>
   listByPatient(patientId: string): Promise<ClinicalRecord[]>

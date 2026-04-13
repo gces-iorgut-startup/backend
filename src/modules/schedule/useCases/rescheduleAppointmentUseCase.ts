@@ -4,14 +4,15 @@ import type { Appointment } from '@prisma/client'
 
 interface RescheduleAppointmentRequest {
   appointmentId: string
+  clinicId: string
   newDateTime: Date
 }
 
 export class RescheduleAppointmentUseCase {
   constructor(private appointmentsRepository: IAppointmentsRepository) {}
 
-  async execute({ appointmentId, newDateTime }: RescheduleAppointmentRequest): Promise<Appointment> {
-    const appointment = await this.appointmentsRepository.findById(appointmentId)
+  async execute({ appointmentId, clinicId, newDateTime }: RescheduleAppointmentRequest): Promise<Appointment> {
+    const appointment = await this.appointmentsRepository.findById(appointmentId, clinicId)
 
     if (!appointment) {
       throw new AppError('Agendamento não encontrado.', 404)

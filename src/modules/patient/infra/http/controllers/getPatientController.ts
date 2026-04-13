@@ -5,7 +5,8 @@ import { z } from 'zod'
 export const getPatientParamsSchema = z.object({ id: z.string().uuid() })
 
 export async function getPatientController(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+  const { clinicId } = request.user
   const useCase = makeGetPatientUseCase()
-  const patient = await useCase.execute(request.params.id)
+  const patient = await useCase.execute({ id: request.params.id, clinicId })
   return reply.status(200).send({ patient })
 }

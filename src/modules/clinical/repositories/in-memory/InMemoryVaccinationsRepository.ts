@@ -22,7 +22,7 @@ export class InMemoryVaccinationsRepository implements IVaccinationsRepository {
     return this.items.filter(v => v.patientId === patientId).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
   }
 
-  async findById(id: string): Promise<Vaccination | null> {
+  async findById(id: string, clinicId: string): Promise<Vaccination | null> {
     return this.items.find(v => v.id === id) ?? null
   }
 

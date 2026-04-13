@@ -32,7 +32,7 @@ export class InMemoryClinicalRecordsRepository implements IClinicalRecordsReposi
     return record
   }
 
-  async findById(id: string): Promise<ClinicalRecord | null> {
+  async findById(id: string, clinicId: string): Promise<ClinicalRecord | null> {
     return this.items.find(i => i.id === id) ?? null
   }
 

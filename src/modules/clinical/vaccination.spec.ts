@@ -32,6 +32,7 @@ describe('Vaccinations Use Cases', () => {
 
     const vaccination = await addVaccinationUseCase.execute({
       patientId: patient.id,
+      clinicId: 'clinic-1',
       vaccineName: 'Raiva',
       status: 'UP_TO_DATE',
       appliedAt: new Date(),
@@ -51,6 +52,7 @@ describe('Vaccinations Use Cases', () => {
 
     await expect(addVaccinationUseCase.execute({
       patientId: patient.id,
+      clinicId: 'clinic-1',
       vaccineName: 'Raiva',
       status: 'UP_TO_DATE',
       // omitting appliedAt
@@ -67,6 +69,7 @@ describe('Vaccinations Use Cases', () => {
 
     await addVaccinationUseCase.execute({
       patientId: patient.id,
+      clinicId: 'clinic-1',
       vaccineName: 'V10',
       status: 'UP_TO_DATE',
       appliedAt: new Date(),
@@ -74,6 +77,7 @@ describe('Vaccinations Use Cases', () => {
 
     await addVaccinationUseCase.execute({
       patientId: patient.id,
+      clinicId: 'clinic-1',
       vaccineName: 'Gripe',
       status: 'PENDING',
       nextDoseAt: new Date(),
@@ -93,6 +97,7 @@ describe('Vaccinations Use Cases', () => {
 
     const applied = await addVaccinationUseCase.execute({
       patientId: patient.id,
+      clinicId: 'clinic-1',
       vaccineName: 'V10',
       status: 'UP_TO_DATE',
       appliedAt: new Date(),
@@ -100,6 +105,7 @@ describe('Vaccinations Use Cases', () => {
 
     await expect(updateUseCase.execute({
       vaccinationId: applied.id,
+      clinicId: 'clinic-1',
       status: 'OVERDUE',
     })).rejects.toThrow('Não é possível alterar o status de uma vacina já aplicada')
   })

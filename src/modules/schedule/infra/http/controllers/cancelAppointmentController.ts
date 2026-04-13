@@ -19,9 +19,10 @@ export async function cancelAppointmentController(
 ) {
   const { id } = request.params
   const { reason } = request.body
+  const { clinicId } = request.user
 
   const useCase = makeCancelAppointmentUseCase()
-  const appointment = await useCase.execute({ appointmentId: id, reason })
+  const appointment = await useCase.execute({ appointmentId: id, clinicId, reason })
 
   return reply.status(200).send(appointment)
 }

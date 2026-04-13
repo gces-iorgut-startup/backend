@@ -6,6 +6,7 @@ import type { Vaccination } from '@prisma/client'
 interface AddVaccinationRequest {
   patientId: string
   vaccineName: string
+  clinicId: string
   appliedAt?: string | Date
   nextDoseAt?: string | Date
   status: 'UP_TO_DATE' | 'PENDING' | 'OVERDUE'
@@ -20,11 +21,12 @@ export class AddVaccinationUseCase {
   async execute({
     patientId,
     vaccineName,
+    clinicId,
     appliedAt,
     nextDoseAt,
     status,
   }: AddVaccinationRequest): Promise<Vaccination> {
-    const patient = await this.patientsRepository.findById(patientId)
+    const patient = await this.patientsRepository.findById(patientId, clinicId)
 
     if (!patient) {
       throw new AppError('Paciente não encontrado.', 404)

@@ -11,8 +11,9 @@ export const createAppointmentBodySchema = z.object({
 })
 
 export async function createAppointmentController(request: FastifyRequest, reply: FastifyReply) {
+  const { clinicId } = request.user
   const body = createAppointmentBodySchema.parse(request.body)
   const useCase = makeCreateAppointmentUseCase()
-  const appointment = await useCase.execute({ ...body, dateTime: new Date(body.dateTime) })
+  const appointment = await useCase.execute({ ...body, clinicId, dateTime: new Date(body.dateTime) })
   return reply.status(201).send({ appointment })
 }

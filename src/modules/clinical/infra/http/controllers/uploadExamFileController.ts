@@ -40,8 +40,11 @@ export async function uploadExamFileController(
 
   const useCase = makeUploadExamFileUseCase()
 
+  const clinicId = request.user.clinicId
+
   const examFile = await useCase.execute({
     patientId,
+    clinicId,
     clinicalRecordId,
     fileName: data.filename,
     fileUrl,

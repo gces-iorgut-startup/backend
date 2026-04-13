@@ -7,7 +7,7 @@ import type {
 import { type Appointment, AppointmentStatus } from '@prisma/client'
 
 const withRelations = {
-  patient: { select: { id: true, name: true, species: true } },
+  patient: { select: { id: true, name: true, species: true, clinicId: true } },
   vet: { select: { id: true, name: true } },
 } as const
 
@@ -16,15 +16,15 @@ export class PrismaAppointmentsRepository implements IAppointmentsRepository {
     return prisma.appointment.create({ data })
   }
 
-  async findById(id: string): Promise<Appointment | null> {
-    return prisma.appointment.findUnique({ where: { id } })
+  async findById(id: string, clinicId: string): Promise<Appointment | null> {
+    return prisma.appointment.findFirst({ where: { id, patient: { clinicId } } })
   }
 
   async updateStatus(id: string, status: AppointmentStatus): Promise<Appointment> {
     return prisma.appointment.update({ where: { id }, data: { status } })
   }
 
-  async listByDay(date: Date, vetId?: string): Promise<AppointmentWithRelations[]> {
+  async listByDay(date: Date, clinicId: string, vetId?: string): Promise<AppointmentWithRelations[]> {
     const start = new Date(date)
     start.setHours(0, 0, 0, 0)
     const end = new Date(date)
@@ -34,6 +34,7 @@ export class PrismaAppointmentsRepository implements IAppointmentsRepository {
       where: {
         dateTime: { gte: start, lte: end },
         status: { not: AppointmentStatus.CANCELLED },
+        patient: { clinicId },
         ...(vetId && { vetId }),
       },
       include: withRelations,

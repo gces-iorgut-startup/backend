@@ -6,6 +6,7 @@ import type { ClinicalRecord } from '@prisma/client'
 interface FinalizeClinicalRecordRequest {
   recordId: string
   vetId: string
+  clinicId: string
 }
 
 export class FinalizeClinicalRecordUseCase {
@@ -14,8 +15,8 @@ export class FinalizeClinicalRecordUseCase {
     private appointmentsRepository: IAppointmentsRepository
   ) {}
 
-  async execute({ recordId, vetId }: FinalizeClinicalRecordRequest): Promise<ClinicalRecord> {
-    const record = await this.clinicalRecordsRepository.findById(recordId)
+  async execute({ recordId, vetId, clinicId }: FinalizeClinicalRecordRequest): Promise<ClinicalRecord> {
+    const record = await this.clinicalRecordsRepository.findById(recordId, clinicId)
 
     if (!record) {
       throw new AppError('Prontuário não encontrado.', 404)

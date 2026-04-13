@@ -15,8 +15,9 @@ export async function updateTutorController(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,
 ) {
+  const { clinicId } = request.user
   const body = updateTutorBodySchema.parse(request.body)
   const useCase = makeUpdateTutorUseCase()
-  const tutor = await useCase.execute({ id: request.params.id, ...body })
+  const tutor = await useCase.execute({ id: request.params.id, clinicId, ...body })
   return reply.status(200).send({ tutor })
 }

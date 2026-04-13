@@ -8,8 +8,9 @@ export const listAppointmentsByDayQuerySchema = z.object({
 })
 
 export async function listAppointmentsByDayController(request: FastifyRequest, reply: FastifyReply) {
+  const { clinicId } = request.user
   const query = listAppointmentsByDayQuerySchema.parse(request.query)
   const useCase = makeListAppointmentsByDayUseCase()
-  const appointments = await useCase.execute(query)
+  const appointments = await useCase.execute({ ...query, clinicId })
   return reply.status(200).send({ appointments })
 }

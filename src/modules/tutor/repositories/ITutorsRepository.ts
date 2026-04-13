@@ -30,9 +30,9 @@ export interface ListTutorsDTO {
 
 export interface ITutorsRepository {
   create(data: CreateTutorDTO): Promise<Tutor>
-  findById(id: string): Promise<Tutor | null>
-  findByCpf(cpf: string): Promise<Tutor | null>
-  findByEmail(email: string): Promise<Tutor | null>
+  findById(id: string, clinicId: string): Promise<Tutor | null>
+  findByCpf(cpf: string, clinicId: string): Promise<Tutor | null>
+  findByEmail(email: string, clinicId: string): Promise<Tutor | null>
   list(params: ListTutorsDTO): Promise<{ tutors: Tutor[]; total: number }>
   update(id: string, data: UpdateTutorDTO): Promise<Tutor>
 }
