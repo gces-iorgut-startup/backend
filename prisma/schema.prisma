@@ -25,18 +25,19 @@ model Clinic {
 // ── Auth & Users (US01) ──────────────────────────────
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  name         String
-  avatarUrl    String?  @map("avatar_url")
-  role         Role     @default(VET)
-  clinicId     String   @map("clinic_id")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id              String           @id @default(uuid())
+  email           String           @unique
+  passwordHash    String           @map("password_hash")
+  name            String
+  avatarUrl       String?          @map("avatar_url")
+  role            Role             @default(VET)
+  clinicId        String           @map("clinic_id")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
 
   clinic          Clinic           @relation(fields: [clinicId], references: [id])
   refreshTokens   RefreshToken[]
+  passwordTokens  PasswordToken[]
   appointments    Appointment[]    @relation("vet_appointments")
   clinicalRecords ClinicalRecord[]
   tutorAccount    Tutor?
@@ -44,7 +45,7 @@ model User {
   @@map("users")
 }
 
-enum Role {
+enum Role {c
   OWNER  // Dono da clínica — acesso total (US02, US03)
   VET    // Médico Veterinário (US09, US10, US11)
   TUTOR  // Tutor — acesso exclusivo ao portal (US14, US15, US16)
@@ -60,6 +61,18 @@ model RefreshToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("refresh_tokens")
+}
+
+model PasswordToken {
+  id        String    @id @default(uuid())
+  token     String    @unique
+  userId    String    @map("user_id")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_tokens")
 }
 
 // ── Tutors (US05, US14, US15, US16) ─────────────────

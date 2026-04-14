@@ -9,6 +9,8 @@ const envSchema = z.object({
   REFRESH_TOKEN_EXPIRES_IN: z.string().default('7d'),
   GEMINI_API_KEY: z.string().default(''),
   GOOGLE_CLIENT_ID: z.string().default(''),
+  RESEND_API_KEY: z.string(),
+  MAIL_FROM: z.string().email().default(''),
 })
 
 const _env = envSchema.safeParse(process.env)
