@@ -16,18 +16,20 @@ export class CreateAppointmentUseCase {
   ) {}
 
   async execute(input: CreateAppointmentRequest): Promise<Appointment> {
+    const { clinicId, ...appointmentData } = input
     const [patient, vet] = await Promise.all([
-      this.patientsRepository.findById(input.patientId, input.clinicId),
+      this.patientsRepository.findById(input.patientId, clinicId),
       this.usersRepository.findById(input.vetId),
     ])
 
     if (!patient) throw Errors.notFound('Paciente não encontrado')
     if (!vet) throw Errors.notFound('Veterinário não encontrado')
+    if (vet.clinicId !== clinicId) throw Errors.notFound('Veterinário não encontrado')
 
     if (input.endDateTime && input.endDateTime <= input.dateTime) {
       throw Errors.badRequest('O horário de fim deve ser posterior ao horário de início.')
     }
 
-    return this.appointmentsRepository.create(input)
+    return this.appointmentsRepository.create(appointmentData)
   }
 }

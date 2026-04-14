@@ -52,6 +52,28 @@ describe('CreateAppointmentUseCase', () => {
 
     await expect(sut.execute({ patientId, vetId: 'id-fake', clinicId: CLINIC_ID, dateTime: new Date(), category: 'OBSERVATION' })).rejects.toMatchObject({ statusCode: 404 })
   })
+
+  it('deve lançar 404 para veterinário de outra clínica', async () => {
+    const { appointmentsRepo, patientsRepo, usersRepo, patientId } = await setupRepos()
+    const sut = new CreateAppointmentUseCase(appointmentsRepo, patientsRepo, usersRepo)
+    const otherClinicVet = await usersRepo.create({
+      name: 'Dr. Outra Clínica',
+      email: 'outra-clinica@g.com',
+      passwordHash: 'x',
+      role: 'VET',
+      clinicId: 'clinic-2',
+    })
+
+    await expect(
+      sut.execute({
+        patientId,
+        vetId: otherClinicVet.id,
+        clinicId: CLINIC_ID,
+        dateTime: new Date(),
+        category: 'OBSERVATION',
+      })
+    ).rejects.toMatchObject({ statusCode: 404 })
+  })
 })
 
 describe('ListAppointmentsByDayUseCase', () => {
