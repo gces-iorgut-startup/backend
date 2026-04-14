@@ -1,0 +1,82 @@
+name: IOUGURT CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-test:
+    name: 🛡️ Linter & Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: iougurt
+          POSTGRES_PASSWORD: iougurt
+          POSTGRES_DB: iougurt_test
+        ports:
+          - 5432:5432
+        health-check:
+          test: ["CMD-SHELL", "pg_isready -U iougurt -d iougurt_test"]
+          interval: 10s
+          timeout: 5s
+          retries: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Linter
+        run: npm run typecheck
+
+      - name: Run Tests
+        env:
+          DATABASE_URL: postgresql://iougurt:iougurt@localhost:5432/iougurt_test?schema=public
+          JWT_SECRET: test-secret
+        run: |
+          npx prisma generate
+          npx vitest run
+
+  build:
+    name: 🏗️ Build Application
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm ci
+      - name: Build Project
+        run: npm run build
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-files
+          path: dist/
+
+  deploy:
+    name: 🚀 Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Cloud Deploy
+        run: echo "Aqui entra o comando específico (ex: Docker Push, Railway, Render, ou AWS)"
