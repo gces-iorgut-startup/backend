@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto'
 import type { User } from '@prisma/client'
-import type { IUsersRepository, CreateUserDTO } from '../IUsersRepository'
+import type { IUsersRepository, CreateUserDTO, UpdateUserDTO } from '../IUsersRepository'
 
 export class InMemoryUsersRepository implements IUsersRepository {
   public items: User[] = []
@@ -14,6 +14,7 @@ export class InMemoryUsersRepository implements IUsersRepository {
       role: data.role,
       clinicId: data.clinicId,
       avatarUrl: null,
+      crmv: data.crmv ?? null,
       createdAt: new Date(),
       updatedAt: new Date(),
     }
@@ -31,5 +32,14 @@ export class InMemoryUsersRepository implements IUsersRepository {
 
   async existsByEmail(email: string): Promise<boolean> {
     return this.items.some(u => u.email === email)
+  }
+
+  async update(id: string, data: UpdateUserDTO): Promise<User> {
+    const user = this.items.find(u => u.id === id)
+    if (!user) throw new Error('User not found')
+    if (data.name !== undefined) user.name = data.name
+    if (data.crmv !== undefined) user.crmv = data.crmv
+    user.updatedAt = new Date()
+    return user
   }
 }

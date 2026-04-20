@@ -8,6 +8,10 @@ interface CreateOwnerInput {
   password: string
   name: string
   clinicName: string
+  clinicCnpj?: string
+  clinicAddress?: string
+  clinicPhone?: string
+  crmv?: string
 }
 
 interface CreateOwnerOutput {
@@ -26,7 +30,12 @@ export class CreateOwnerUseCase {
     // Cria clínica + owner numa transação atômica
     const result = await prisma.$transaction(async (tx) => {
       const clinic = await tx.clinic.create({
-        data: { name: input.clinicName.trim() },
+        data: {
+          name: input.clinicName.trim(),
+          cnpj: input.clinicCnpj?.trim() || null,
+          address: input.clinicAddress?.trim() || null,
+          phone: input.clinicPhone?.trim() || null,
+        },
       })
 
       const user = await tx.user.create({
@@ -36,6 +45,7 @@ export class CreateOwnerUseCase {
           name: input.name.trim(),
           role: 'OWNER' as Role,
           clinicId: clinic.id,
+          crmv: input.crmv?.trim() || null,
         },
       })
 

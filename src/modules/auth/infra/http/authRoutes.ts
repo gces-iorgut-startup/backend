@@ -5,6 +5,7 @@ import { authenticateController, authenticateBodySchema } from './controllers/au
 import { refreshTokenController, refreshTokenBodySchema } from './controllers/refreshTokenController'
 import { logoutController } from './controllers/logoutController'
 import { googleAuthController, googleAuthBodySchema } from './controllers/googleAuthController'
+import { getMeController, updateMeController, updateUserBodySchema } from './controllers/meController'
 import { verifyJwt } from '@shared/middleware/verify-jwt'
 import { verifyRole } from '@shared/middleware/verify-role'
 
@@ -61,4 +62,23 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
       body: googleAuthBodySchema,
     },
   }, googleAuthController)
+
+  app.get('/me', {
+    preHandler: [verifyJwt],
+    schema: {
+      tags: ['Auth'],
+      summary: 'Retorna o usuário autenticado (inclui CRMV)',
+      security: [{ bearerAuth: [] }],
+    },
+  }, getMeController)
+
+  app.patch('/me', {
+    preHandler: [verifyJwt],
+    schema: {
+      tags: ['Auth'],
+      summary: 'Atualiza o próprio perfil (nome, CRMV)',
+      body: updateUserBodySchema,
+      security: [{ bearerAuth: [] }],
+    },
+  }, updateMeController)
 }

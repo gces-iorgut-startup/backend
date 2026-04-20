@@ -12,3 +12,6 @@ npm-debug.log*
 
 # Coverage
 coverage/
+
+# Runtime uploads
+uploads/

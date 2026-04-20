@@ -4,7 +4,6 @@ import { randomUUID } from 'crypto'
 import fs from 'fs'
 import path from 'path'
 import { pipeline } from 'stream/promises'
-import { fileURLToPath } from 'url'
 import { AppError } from '@shared/errors/app-error'
 
 const UPLOADS_DIR = path.join(process.cwd(), 'uploads')
@@ -33,6 +32,7 @@ export async function uploadExamFileController(
   const uniqueName = `${randomUUID()}${fileExt}`
   const filePath = path.join(UPLOADS_DIR, uniqueName)
 
+  await fs.promises.mkdir(UPLOADS_DIR, { recursive: true })
   await pipeline(data.file, fs.createWriteStream(filePath))
 
   const fileUrl = `/uploads/${uniqueName}`
