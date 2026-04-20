@@ -129,7 +129,7 @@ describe('CancelAppointmentUseCase', () => {
       patientId: patient.id, vetId: vet.id, clinicId: CLINIC_ID,
       dateTime: new Date('2099-01-01T10:00:00'), category: 'OBSERVATION',
     })
-    await expect(new CancelAppointmentUseCase(aRepo).execute({ appointmentId: appointment.id, clinicId: CLINIC_ID, reason: 'ok' }))
+    await expect(new CancelAppointmentUseCase(aRepo).execute({ appointmentId: appointment.id, clinicId: CLINIC_ID, reason: '' }))
       .rejects.toMatchObject({ statusCode: 400 })
   })
 

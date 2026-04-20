@@ -7,7 +7,7 @@ export const cancelAppointmentParamsSchema = z.object({
 })
 
 export const cancelAppointmentBodySchema = z.object({
-  reason: z.string().min(5, 'Justificativa deve ter ao menos 5 caracteres'),
+  reason: z.string().trim().min(1, 'Justificativa deve ter ao menos 1 caractere'),
 })
 
 export async function cancelAppointmentController(

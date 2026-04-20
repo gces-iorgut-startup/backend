@@ -30,8 +30,8 @@ export class CancelAppointmentUseCase {
       throw new AppError('Não é possível cancelar um atendimento em andamento. Finalize o prontuário primeiro.', 400)
     }
 
-    if (!reason || reason.trim().length < 5) {
-      throw new AppError('Justificativa de cancelamento deve ter ao menos 5 caracteres.', 400)
+    if (!reason || reason.trim().length < 1) {
+      throw new AppError('Justificativa de cancelamento deve ter ao menos 1 caractere.', 400)
     }
 
     return this.appointmentsRepository.cancel(appointmentId, reason.trim())
