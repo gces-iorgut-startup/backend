@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken'
 import { env } from '../../../config/env'
+import { Errors } from '../../../core/errors'
 import type { IUsersRepository } from '../repositories/IUsersRepository'
 import type { IPasswordTokensRepository } from '../repositories/IPasswordTokensRepository'
 import type { ResendMailProvider } from '../infra/providers/ResendMailProvider'
@@ -15,8 +16,12 @@ export class SendForgotPasswordMailUseCase {
     const user = await this.usersRepository.findByEmail(email.toLowerCase().trim())
 
     if (!user) return
+    this.mailProvider.assertConfigured()
+    if (!env.PASSWORD_RESET_SECRET) {
+      throw Errors.serviceUnavailable('Recuperação de senha indisponível no momento.')
+    }
 
-    const token = jwt.sign({ sub: user.id }, env.JWT_SECRET, { expiresIn: '2h' })
+    const token = jwt.sign({ sub: user.id, purpose: 'password-reset' }, env.PASSWORD_RESET_SECRET, { expiresIn: '2h' })
     
     const expiresAt = new Date()
     expiresAt.setHours(expiresAt.getHours() + 2)
