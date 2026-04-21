@@ -7,7 +7,7 @@ import type {
 import { type Appointment, AppointmentStatus } from '@prisma/client'
 
 const withRelations = {
-  patient: { select: { id: true, name: true, species: true, clinicId: true } },
+  patient: { select: { id: true, name: true, species: true, clinicId: true, photoUrl: true } },
   vet: { select: { id: true, name: true } },
 } as const
 
