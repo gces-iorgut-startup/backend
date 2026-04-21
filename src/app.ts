@@ -21,6 +21,8 @@ import { portalRoutes } from './modules/portal/infra/http/portalRoutes'
 import fastifySwagger from '@fastify/swagger'
 import fastifySwaggerUi from '@fastify/swagger-ui'
 import { serializerCompiler, validatorCompiler, jsonSchemaTransform } from 'fastify-type-provider-zod'
+import rateLimit from '@fastify/rate-limit'
+
 
 export const app = fastify({ logger: env.NODE_ENV === 'development' })
 
@@ -74,6 +76,10 @@ app.register(fastifyMultipart, {
 app.register(fastifyStatic, {
   root: path.join(__dirname, '..', 'uploads'),
   prefix: '/uploads/',
+})
+
+app.register(rateLimit, {
+  global: false, 
 })
 
 // ── Health Check ─────────────────────────────────────

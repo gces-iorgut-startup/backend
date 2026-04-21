@@ -32,4 +32,12 @@ export class InMemoryUsersRepository implements IUsersRepository {
   async existsByEmail(email: string): Promise<boolean> {
     return this.items.some(u => u.email === email)
   }
+
+  async updatePassword(id: string, passwordHash: string): Promise<void> {
+    const userIndex = this.items.findIndex(u => u.id === id)
+    if (userIndex >= 0) {
+      this.items[userIndex].passwordHash = passwordHash
+      this.items[userIndex].updatedAt = new Date()
+    }
+  }
 }

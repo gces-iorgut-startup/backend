@@ -19,4 +19,8 @@ export class PrismaUsersRepository implements IUsersRepository {
     const count = await prisma.user.count({ where: { email } })
     return count > 0
   }
+
+  async updatePassword(id: string, passwordHash: string): Promise<void> {
+  await prisma.user.update({ where: { id }, data: { passwordHash } })
+  }
 }
