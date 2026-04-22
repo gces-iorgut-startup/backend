@@ -2,6 +2,7 @@ import { PrismaDashboardRepository } from '../../infra/repositories/PrismaDashbo
 import { PrismaUsersRepository } from '../../../auth/infra/repositories/PrismaUsersRepository'
 import { GetDailyOverviewUseCase } from '../getDailyOverviewUseCase'
 import { GetAdminMetricsUseCase } from '../getAdminMetricsUseCase'
+import { GetAdminAppointmentsTrendUseCase } from '../getAdminAppointmentsTrendUseCase'
 
 export function makeGetDailyOverviewUseCase() {
   const dashboardRepository = new PrismaDashboardRepository()
@@ -13,4 +14,10 @@ export function makeGetAdminMetricsUseCase() {
   const dashboardRepository = new PrismaDashboardRepository()
   const usersRepository = new PrismaUsersRepository()
   return new GetAdminMetricsUseCase(dashboardRepository, usersRepository)
+}
+
+export function makeGetAdminAppointmentsTrendUseCase() {
+  const dashboardRepository = new PrismaDashboardRepository()
+  const usersRepository = new PrismaUsersRepository()
+  return new GetAdminAppointmentsTrendUseCase(dashboardRepository, usersRepository)
 }

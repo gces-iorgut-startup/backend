@@ -23,7 +23,13 @@ export class InMemoryAppointmentsRepository implements IAppointmentsRepository {
       cancelReason: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-      patient: { id: data.patientId, name: 'Paciente', species: 'Cachorro', clinicId: 'clinic-1' },
+      patient: {
+        id: data.patientId,
+        name: 'Paciente',
+        species: 'Cachorro',
+        clinicId: 'clinic-1',
+        photoUrl: null,
+      },
       vet: { id: data.vetId, name: 'Veterinário' },
     }
     this.items.push(appointment)
