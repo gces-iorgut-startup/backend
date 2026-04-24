@@ -15,4 +15,7 @@ export const Errors = {
 
   badRequest: (message = 'Requisição inválida') =>
     new AppError(message, 400),
+
+  serviceUnavailable: (message = 'Serviço indisponível') =>
+    new AppError(message, 503),
 }

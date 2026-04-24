@@ -22,4 +22,5 @@ export interface IUsersRepository {
   findByEmail(email: string): Promise<User | null>
   existsByEmail(email: string): Promise<boolean>
   update(id: string, data: UpdateUserDTO): Promise<User>
+  updatePassword(id: string, passwordHash: string): Promise<void>
 }

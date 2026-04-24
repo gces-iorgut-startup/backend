@@ -4,7 +4,7 @@ import type { AppointmentCategory, AppointmentStatus } from '@prisma/client'
 export type { AppointmentCategory, AppointmentStatus }
 
 export type AppointmentWithRelations = Appointment & {
-  patient: Pick<Patient, 'id' | 'name' | 'species' | 'clinicId'>
+  patient: Pick<Patient, 'id' | 'name' | 'species' | 'clinicId' | 'photoUrl'>
   vet: Pick<User, 'id' | 'name'>
 }
 

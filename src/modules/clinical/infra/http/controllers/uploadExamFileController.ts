@@ -7,6 +7,7 @@ import { pipeline } from 'stream/promises'
 import { AppError } from '@shared/errors/app-error'
 
 const UPLOADS_DIR = path.join(process.cwd(), 'uploads')
+const PDF_MIME = 'application/pdf'
 
 export async function uploadExamFileController(
   request: FastifyRequest,
@@ -28,6 +29,19 @@ export async function uploadExamFileController(
     throw new AppError('patientId é obrigatório.', 400)
   }
 
+  const clinicId = request.user.clinicId
+  const useCase = makeUploadExamFileUseCase()
+  await useCase.assertPatientBelongsToClinic(patientId, clinicId)
+
+  let fileType: 'image' | 'pdf'
+  if (data.mimetype === PDF_MIME) {
+    fileType = 'pdf'
+  } else if (data.mimetype.startsWith('image/')) {
+    fileType = 'image'
+  } else {
+    throw new AppError('Formato inválido. Envie apenas PDF ou imagem.', 400)
+  }
+
   const fileExt = path.extname(data.filename)
   const uniqueName = `${randomUUID()}${fileExt}`
   const filePath = path.join(UPLOADS_DIR, uniqueName)
@@ -36,20 +50,20 @@ export async function uploadExamFileController(
   await pipeline(data.file, fs.createWriteStream(filePath))
 
   const fileUrl = `/uploads/${uniqueName}`
-  const fileType = data.mimetype.startsWith('image/') ? 'image' : 'pdf'
-
-  const useCase = makeUploadExamFileUseCase()
-
-  const clinicId = request.user.clinicId
-
-  const examFile = await useCase.execute({
-    patientId,
-    clinicId,
-    clinicalRecordId,
-    fileName: data.filename,
-    fileUrl,
-    fileType,
-  })
+  let examFile
+  try {
+    examFile = await useCase.execute({
+      patientId,
+      clinicId,
+      clinicalRecordId,
+      fileName: data.filename,
+      fileUrl,
+      fileType,
+    })
+  } catch (error) {
+    await fs.promises.unlink(filePath).catch(() => undefined)
+    throw error
+  }
 
   return reply.status(201).send(examFile)
 }

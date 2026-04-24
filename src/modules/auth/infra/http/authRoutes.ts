@@ -1,4 +1,5 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
+import '@fastify/rate-limit'
 import { registerOwnerController, registerOwnerBodySchema } from './controllers/registerOwnerController'
 import { registerVetController, registerVetBodySchema } from './controllers/registerVetController'
 import { authenticateController, authenticateBodySchema } from './controllers/authenticateController'
@@ -6,6 +7,8 @@ import { refreshTokenController, refreshTokenBodySchema } from './controllers/re
 import { logoutController } from './controllers/logoutController'
 import { googleAuthController, googleAuthBodySchema } from './controllers/googleAuthController'
 import { getMeController, updateMeController, updateUserBodySchema } from './controllers/meController'
+import { sendForgotPasswordMailController, sendForgotPasswordMailBodySchema } from './controllers/sendForgotPasswordMailController'
+import { resetPasswordController, resetPasswordBodySchema } from './controllers/resetPasswordController'
 import { verifyJwt } from '@shared/middleware/verify-jwt'
 import { verifyRole } from '@shared/middleware/verify-role'
 
@@ -81,4 +84,27 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
       security: [{ bearerAuth: [] }],
     },
   }, updateMeController)
+
+  const passwordRateLimit = {
+    max: 3,
+    timeWindow: '15 minutes',
+  }
+
+  app.post('/password/forgot', {
+    config: { rateLimit: passwordRateLimit },
+    schema: {
+      tags: ['Auth'],
+      summary: 'Solicitar e-mail de recuperação de senha',
+      body: sendForgotPasswordMailBodySchema,
+    },
+  }, sendForgotPasswordMailController)
+
+  app.post('/password/reset', {
+    config: { rateLimit: passwordRateLimit },
+    schema: {
+      tags: ['Auth'],
+      summary: 'Redefinir senha',
+      body: resetPasswordBodySchema,
+    },
+  }, resetPasswordController)
 }

@@ -1,7 +1,12 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { verifyJwt } from '@shared/middleware/verify-jwt'
+import { verifyRole } from '@shared/middleware/verify-role'
 import { getDailyOverviewController, getDailyOverviewQuerySchema } from './controllers/getDailyOverviewController'
 import { getAdminMetricsController } from './controllers/getAdminMetricsController'
+import {
+  getAdminAppointmentsTrendController,
+  getAdminAppointmentsTrendQuerySchema,
+} from './controllers/getAdminAppointmentsTrendController'
 
 export const dashboardRoutes: FastifyPluginAsyncZod = async app => {
   app.addHook('onRequest', verifyJwt)
@@ -22,6 +27,7 @@ export const dashboardRoutes: FastifyPluginAsyncZod = async app => {
   app.get(
     '/admin',
     {
+      preHandler: [verifyRole('OWNER')],
       schema: {
         summary: 'Get Admin Metrics',
         tags: ['Dashboard'],
@@ -29,5 +35,19 @@ export const dashboardRoutes: FastifyPluginAsyncZod = async app => {
       },
     },
     getAdminMetricsController
+  )
+
+  app.get(
+    '/admin/appointments-trend',
+    {
+      preHandler: [verifyRole('OWNER')],
+      schema: {
+        summary: 'Get Admin Appointments Trend',
+        tags: ['Dashboard'],
+        querystring: getAdminAppointmentsTrendQuerySchema,
+        security: [{ bearerAuth: [] }],
+      },
+    },
+    getAdminAppointmentsTrendController
   )
 }
