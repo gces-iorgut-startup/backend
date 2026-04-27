@@ -45,14 +45,13 @@ export async function uploadExamFileController(
   const fileExt = path.extname(data.filename)
   const uniqueName = `${randomUUID()}${fileExt}`
   const filePath = path.join(UPLOADS_DIR, uniqueName)
-
-  await fs.promises.mkdir(UPLOADS_DIR, { recursive: true })
-  await pipeline(data.file, fs.createWriteStream(filePath))
-
   const fileUrl = `/uploads/${uniqueName}`
-  let examFile
+
   try {
-    examFile = await useCase.execute({
+    await fs.promises.mkdir(UPLOADS_DIR, { recursive: true })
+    await pipeline(data.file, fs.createWriteStream(filePath))
+
+    const examFile = await useCase.execute({
       patientId,
       clinicId,
       clinicalRecordId,
@@ -60,10 +59,9 @@ export async function uploadExamFileController(
       fileUrl,
       fileType,
     })
+    return reply.status(201).send(examFile)
   } catch (error) {
     await fs.promises.unlink(filePath).catch(() => undefined)
     throw error
   }
-
-  return reply.status(201).send(examFile)
 }
