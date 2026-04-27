@@ -7,10 +7,11 @@ interface CreateVetInput {
   password: string
   name: string
   clinicId: string // extraído do JWT do OWNER
+  crmv?: string
 }
 
 interface CreateVetOutput {
-  id: string; email: string; name: string; role: string
+  id: string; email: string; name: string; role: string; crmv: string | null
 }
 
 export class CreateVetUseCase {
@@ -30,8 +31,9 @@ export class CreateVetUseCase {
       name: input.name.trim(),
       role: 'VET',
       clinicId: input.clinicId,
+      crmv: input.crmv?.trim() || null,
     })
 
-    return { id: user.id, email: user.email, name: user.name, role: user.role }
+    return { id: user.id, email: user.email, name: user.name, role: user.role, crmv: user.crmv }
   }
 }

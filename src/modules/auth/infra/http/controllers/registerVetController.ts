@@ -7,6 +7,7 @@ export const registerVetBodySchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(6),
+  crmv: z.string().trim().min(2).max(40).optional(),
 })
 
 export async function registerVetController(request: FastifyRequest, reply: FastifyReply) {

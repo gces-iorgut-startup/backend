@@ -1,5 +1,9 @@
 import { prisma } from '../../../../config/prisma'
-import type { IUsersRepository, CreateUserDTO } from '../../repositories/IUsersRepository'
+import type {
+  IUsersRepository,
+  CreateUserDTO,
+  UpdateUserDTO,
+} from '../../repositories/IUsersRepository'
 import type { User } from '@prisma/client'
 
 export class PrismaUsersRepository implements IUsersRepository {
@@ -20,7 +24,11 @@ export class PrismaUsersRepository implements IUsersRepository {
     return count > 0
   }
 
+  async update(id: string, data: UpdateUserDTO): Promise<User> {
+    return prisma.user.update({ where: { id }, data })
+  }
+
   async updatePassword(id: string, passwordHash: string): Promise<void> {
-  await prisma.user.update({ where: { id }, data: { passwordHash } })
+    await prisma.user.update({ where: { id }, data: { passwordHash } })
   }
 }

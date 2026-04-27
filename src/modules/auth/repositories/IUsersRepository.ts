@@ -8,6 +8,12 @@ export interface CreateUserDTO {
   name: string
   role: Role
   clinicId: string
+  crmv?: string | null
+}
+
+export interface UpdateUserDTO {
+  name?: string
+  crmv?: string | null
 }
 
 export interface IUsersRepository {
@@ -15,5 +21,6 @@ export interface IUsersRepository {
   findById(id: string): Promise<User | null>
   findByEmail(email: string): Promise<User | null>
   existsByEmail(email: string): Promise<boolean>
+  update(id: string, data: UpdateUserDTO): Promise<User>
   updatePassword(id: string, passwordHash: string): Promise<void>
 }

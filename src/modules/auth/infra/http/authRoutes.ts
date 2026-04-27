@@ -6,6 +6,7 @@ import { authenticateController, authenticateBodySchema } from './controllers/au
 import { refreshTokenController, refreshTokenBodySchema } from './controllers/refreshTokenController'
 import { logoutController } from './controllers/logoutController'
 import { googleAuthController, googleAuthBodySchema } from './controllers/googleAuthController'
+import { getMeController, updateMeController, updateUserBodySchema } from './controllers/meController'
 import { sendForgotPasswordMailController, sendForgotPasswordMailBodySchema } from './controllers/sendForgotPasswordMailController'
 import { resetPasswordController, resetPasswordBodySchema } from './controllers/resetPasswordController'
 import { verifyJwt } from '@shared/middleware/verify-jwt'
@@ -65,10 +66,28 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   }, googleAuthController)
 
+  app.get('/me', {
+    preHandler: [verifyJwt],
+    schema: {
+      tags: ['Auth'],
+      summary: 'Retorna o usuário autenticado (inclui CRMV)',
+      security: [{ bearerAuth: [] }],
+    },
+  }, getMeController)
 
-const passwordRateLimit = {
+  app.patch('/me', {
+    preHandler: [verifyJwt],
+    schema: {
+      tags: ['Auth'],
+      summary: 'Atualiza o próprio perfil (nome, CRMV)',
+      body: updateUserBodySchema,
+      security: [{ bearerAuth: [] }],
+    },
+  }, updateMeController)
+
+  const passwordRateLimit = {
     max: 3,
-    timeWindow: '15 minutes'
+    timeWindow: '15 minutes',
   }
 
   app.post('/password/forgot', {

@@ -11,7 +11,7 @@ interface GoogleAuthInput {
 }
 
 interface GoogleAuthOutput {
-  user: { id: string; name: string; email: string; role: string; clinicId: string }
+  user: { id: string; name: string; email: string; role: string; clinicId: string; crmv: string | null }
   refreshToken: string
   isNewUser: boolean
 }
@@ -78,7 +78,7 @@ export class GoogleAuthUseCase {
     })
 
     return {
-      user: { id: user.id, name: user.name, email: user.email, role: user.role, clinicId: user.clinicId },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, clinicId: user.clinicId, crmv: user.crmv ?? null },
       refreshToken: tokenValue,
       isNewUser,
     }

@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url'
 import { env } from './config/env'
 import { errorHandler } from './shared/middleware/error-handler'
 import { authRoutes } from './modules/auth/infra/http/authRoutes'
+import { clinicRoutes } from './modules/clinic/infra/http/clinicRoutes'
 import { tutorRoutes } from './modules/tutor/infra/http/tutorRoutes'
 import { patientRoutes } from './modules/patient/infra/http/patientRoutes'
 import { appointmentRoutes } from './modules/schedule/infra/http/appointmentRoutes'
@@ -87,6 +88,7 @@ app.get('/health', () => ({ status: 'ok' }))
 
 // ── Routes ────────────────────────────────────────────
 app.register(authRoutes, { prefix: '/auth' })
+app.register(clinicRoutes, { prefix: '/clinics' })
 app.register(tutorRoutes, { prefix: '/tutors' })
 app.register(patientRoutes, { prefix: '/patients' })
 app.register(appointmentRoutes, { prefix: '/appointments' })

@@ -18,6 +18,14 @@ export class UploadExamFileUseCase {
     private patientsRepository: IPatientsRepository
   ) {}
 
+  async assertPatientBelongsToClinic(patientId: string, clinicId: string): Promise<void> {
+    const patient = await this.patientsRepository.findById(patientId, clinicId)
+
+    if (!patient) {
+      throw new AppError('Paciente não encontrado.', 404)
+    }
+  }
+
   async execute({
     patientId,
     clinicId,
@@ -26,11 +34,7 @@ export class UploadExamFileUseCase {
     fileUrl,
     fileType,
   }: UploadExamFileRequest): Promise<ExamFile> {
-    const patient = await this.patientsRepository.findById(patientId, clinicId)
-
-    if (!patient) {
-      throw new AppError('Paciente não encontrado.', 404)
-    }
+    await this.assertPatientBelongsToClinic(patientId, clinicId)
 
     return this.examFilesRepository.create({
       patientId,
