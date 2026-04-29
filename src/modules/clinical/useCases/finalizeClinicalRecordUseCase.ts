@@ -1,6 +1,7 @@
 import { AppError } from '../../../shared/errors/app-error'
 import type { IAppointmentsRepository } from '../../schedule/repositories/IAppointmentsRepository'
 import type { IClinicalRecordsRepository } from '../repositories/IClinicalRecordsRepository'
+import type { GenerateAISummaryUseCase } from './generateAISummaryUseCase'
 import type { ClinicalRecord } from '@prisma/client'
 
 interface FinalizeClinicalRecordRequest {
@@ -12,7 +13,8 @@ interface FinalizeClinicalRecordRequest {
 export class FinalizeClinicalRecordUseCase {
   constructor(
     private clinicalRecordsRepository: IClinicalRecordsRepository,
-    private appointmentsRepository: IAppointmentsRepository
+    private appointmentsRepository: IAppointmentsRepository,
+    private generateAISummaryUseCase?: GenerateAISummaryUseCase
   ) {}
 
   async execute({ recordId, vetId, clinicId }: FinalizeClinicalRecordRequest): Promise<ClinicalRecord> {
@@ -36,6 +38,27 @@ export class FinalizeClinicalRecordUseCase {
       await this.appointmentsRepository.updateStatus(updatedRecord.appointmentId, 'COMPLETED')
     }
 
-    return updatedRecord
+    if (!this.generateAISummaryUseCase) {
+      return updatedRecord
+    }
+
+    try {
+      const { summary } = await this.generateAISummaryUseCase.execute({
+        recordId,
+        vetId,
+        clinicId,
+      })
+
+      return {
+        ...updatedRecord,
+        aiSummary: summary,
+      }
+    } catch (error) {
+      console.error('Falha ao gerar resumo por IA do prontuário.', {
+        recordId,
+        error,
+      })
+      return updatedRecord
+    }
   }
 }
