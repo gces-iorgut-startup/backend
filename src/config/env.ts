@@ -13,8 +13,8 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().default(''),
   RESEND_API_KEY: z.string().default(''),
   MAIL_FROM: z.union([z.string().email(), z.literal('')]).default(''),
-  GEMINI_MODEL: z.string().default('gemini-flash-lite-latest'),
-  GEMINI_FALLBACK_MODELS: z.string().default('gemini-flash-latest,gemini-2.5-flash'),
+  GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
+  GEMINI_FALLBACK_MODELS: z.string().default('gemini-2.5-flash-lite'),
 })
 
 const _env = envSchema.safeParse(process.env)
