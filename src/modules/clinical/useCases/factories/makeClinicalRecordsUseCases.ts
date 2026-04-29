@@ -21,7 +21,12 @@ export function makeUpdateClinicalRecordUseCase() {
 export function makeFinalizeClinicalRecordUseCase() {
   const clinicalRecordsRepository = new PrismaClinicalRecordsRepository()
   const appointmentsRepository = new PrismaAppointmentsRepository()
-  return new FinalizeClinicalRecordUseCase(clinicalRecordsRepository, appointmentsRepository)
+  const generateAISummaryUseCase = new GenerateAISummaryUseCase()
+  return new FinalizeClinicalRecordUseCase(
+    clinicalRecordsRepository,
+    appointmentsRepository,
+    generateAISummaryUseCase
+  )
 }
 
 export function makeGetPatientHistoryUseCase() {

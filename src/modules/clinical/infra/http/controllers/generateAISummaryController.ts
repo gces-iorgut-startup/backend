@@ -11,9 +11,10 @@ export async function generateAISummaryController(
   reply: FastifyReply
 ) {
   const { id } = request.params
+  const { clinicId, userId: vetId } = request.user
 
   const useCase = makeGenerateAISummaryUseCase()
-  const result = await useCase.execute({ recordId: id })
+  const result = await useCase.execute({ recordId: id, clinicId, vetId })
 
   return reply.status(200).send(result)
 }
