@@ -7,9 +7,15 @@ import { InMemoryTutorsRepository } from '../repositories/in-memory/InMemoryTuto
 
 const CLINIC_ID = 'clinic-1'
 
+/** CPFs válidos (dígitos verificadores corretos) para fixtures dos testes */
+const CPF_MARIA = '52998224725'
+const CPF_JOAO = '39053344705'
+const CPF_CARLOS = '11144477735'
+const CPF_OUTRA_CLINICA = '85351346893'
+
 const makeInput = (overrides = {}) => ({
   clinicId: CLINIC_ID,
-  fullName: 'Maria Silva', cpf: '12345678901', phone: '61999990000', ...overrides,
+  fullName: 'Maria Silva', cpf: CPF_MARIA, phone: '61999990000', ...overrides,
 })
 
 describe('CreateTutorUseCase', () => {
@@ -54,11 +60,11 @@ describe('ListTutorsUseCase', () => {
 
   beforeEach(async () => {
     repo = new InMemoryTutorsRepository()
-    await repo.create(makeInput({ fullName: 'Maria Silva', cpf: '11111111111' }))
-    await repo.create(makeInput({ fullName: 'João Santos', cpf: '22222222222' }))
-    await repo.create(makeInput({ fullName: 'Carlos Oliveira', cpf: '33333333333' }))
+    await repo.create(makeInput({ fullName: 'Maria Silva', cpf: CPF_MARIA }))
+    await repo.create(makeInput({ fullName: 'João Santos', cpf: CPF_JOAO }))
+    await repo.create(makeInput({ fullName: 'Carlos Oliveira', cpf: CPF_CARLOS }))
     // Tutor em outra clínica — não deve aparecer nas listagens da clinic-1
-    await repo.create(makeInput({ fullName: 'Outro Clinic', cpf: '44444444444', clinicId: 'clinic-2' }))
+    await repo.create(makeInput({ fullName: 'Outro Clinic', cpf: CPF_OUTRA_CLINICA, clinicId: 'clinic-2' }))
   })
 
   it('deve listar apenas tutores da clínica correta', async () => {
@@ -84,11 +90,11 @@ describe('UpdateTutorUseCase', () => {
 
   it('deve lançar 409 ao atualizar para CPF já cadastrado na mesma clínica', async () => {
     const repo = new InMemoryTutorsRepository()
-    const tutorA = await repo.create(makeInput({ cpf: '11111111111' }))
-    await repo.create(makeInput({ cpf: '22222222222' }))
+    const tutorA = await repo.create(makeInput({ cpf: CPF_MARIA }))
+    await repo.create(makeInput({ cpf: CPF_JOAO }))
 
     await expect(
-      new UpdateTutorUseCase(repo).execute({ id: tutorA.id, clinicId: CLINIC_ID, cpf: '22222222222' }),
+      new UpdateTutorUseCase(repo).execute({ id: tutorA.id, clinicId: CLINIC_ID, cpf: CPF_JOAO }),
     ).rejects.toMatchObject({ statusCode: 409 })
   })
 
