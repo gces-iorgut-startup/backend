@@ -8,8 +8,11 @@ import { InMemoryTutorsRepository } from '../../tutor/repositories/in-memory/InM
 
 const CLINIC_ID = 'clinic-1'
 
+const CPF_MARIA = '52998224725'
+const CPF_JOAO = '39053344705'
+
 const makeTutorInput = (overrides = {}) => ({
-  clinicId: CLINIC_ID, fullName: 'Maria', cpf: '12345678901', phone: '61999990000', ...overrides,
+  clinicId: CLINIC_ID, fullName: 'Maria', cpf: CPF_MARIA, phone: '61999990000', ...overrides,
 })
 
 const makeInput = (overrides = {}) => ({
@@ -117,14 +120,14 @@ describe('UpdatePatientUseCase', () => {
     const tutorsRepo = new InMemoryTutorsRepository()
 
     const tutorDoPaciente = await tutorsRepo.create(makeTutorInput())
-    await tutorsRepo.create(makeTutorInput({ fullName: 'João', cpf: '99999999999' }))
+    await tutorsRepo.create(makeTutorInput({ fullName: 'João', cpf: CPF_JOAO }))
     await patientsRepo.create(makeInput({ tutorId: tutorDoPaciente.id }))
 
     await expect(
       new UpdatePatientUseCase(patientsRepo, tutorsRepo).execute({
         id: patientsRepo.items[0].id,
         clinicId: CLINIC_ID,
-        tutor: { cpf: '99999999999' },
+        tutor: { cpf: CPF_JOAO },
       }),
     ).rejects.toMatchObject({ statusCode: 409 })
   })

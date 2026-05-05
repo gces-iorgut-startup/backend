@@ -14,7 +14,7 @@ const dummyTutor: Tutor = {
   userId: null,
   clinicId: 'clinic-1',
   fullName: 'Tutor',
-  cpf: '00000000000',
+  cpf: '52998224725',
   phone: '',
   email: null,
   address: null,

@@ -1,5 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
 import { z } from 'zod'
+import { isValidCpf, onlyDigits } from '@shared/documents'
 import { makeUpdatePatientUseCase } from '../../../useCases/factories/makeUpdatePatientUseCase'
 
 export const updatePatientBodySchema = z.object({
@@ -14,7 +15,11 @@ export const updatePatientBodySchema = z.object({
   allergies: z.string().optional(),
   photoUrl: z.string().optional(),
   tutor: z.object({
-    cpf: z.string().length(11).optional(),
+    cpf: z
+      .string()
+      .optional()
+      .refine((val) => val === undefined || isValidCpf(val), { message: 'CPF inválido' })
+      .transform((val) => (val === undefined ? undefined : onlyDigits(val))),
     fullName: z.string().min(2).optional(),
     phone: z.string().min(10).optional(),
     email: z.string().email().optional(),

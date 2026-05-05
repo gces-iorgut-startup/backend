@@ -1,9 +1,13 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
 import { z } from 'zod'
+import { isValidCpf, onlyDigits } from '@shared/documents'
 import { makeCreateTutorUseCase } from '../../../useCases/factories/makeCreateTutorUseCase'
 export const createTutorBodySchema = z.object({
   fullName: z.string().min(2),
-  cpf: z.string().length(11),
+  cpf: z
+    .string()
+    .refine((val) => isValidCpf(val), { message: 'CPF inválido' })
+    .transform((val) => onlyDigits(val)),
   phone: z.string().min(10),
   email: z.string().email().optional(),
   address: z.string().optional(),
