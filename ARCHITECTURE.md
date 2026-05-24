@@ -47,7 +47,7 @@ docker compose up
 | API | `http://localhost:3001` |
 | Swagger UI | `http://localhost:3001/docs` |
 | Health Check | `http://localhost:3001/health` |
-| PostgreSQL | `localhost:5433` |
+| PostgreSQL | `localhost:5432` |
 
 ### Variáveis de Ambiente (`.env`)
 ```env
@@ -150,6 +150,16 @@ Patient ───── Vaccination     (1:N)
 Patient ───── ExamFile        (1:N)
 ClinicalRecord ── ExamFile    (1:N opcional)
 ```
+
+### Modelo físico (DDL)
+
+O DDL completo está versionado em [`prisma/physical_model.sql`](./prisma/physical_model.sql) — gerado a partir do `schema.prisma` via `prisma migrate diff --from-empty --script`. Inclui enums, tabelas, índices e foreign keys.
+
+**Constraints únicas notáveis (multi-tenancy por clínica):**
+
+- `tutors`: `UNIQUE(cpf, clinic_id)` e `UNIQUE(email, clinic_id)` — o mesmo CPF pode existir em clínicas diferentes.
+- `users.email`: único globalmente (login).
+- `clinical_records.appointment_id`: `UNIQUE` — garante 1:1 com `appointments`.
 
 ### Enums importantes
 
@@ -371,65 +381,307 @@ throw new AppError('Paciente não encontrado.', 404)
 
 ## 9. Testes
 
-O projeto usa **Vitest** com **repositórios em memória** — sem banco real, sem Docker.
+O projeto tem **duas camadas de testes**, ambas rodando em **Vitest**:
 
-### Rodar os testes
-```bash
-npx vitest run          # todos os testes
-npx vitest              # modo watch (atualiza ao salvar)
-```
+1. **Testes unitários de Use Case** (já existentes) — usam repositórios `InMemory*` e validam regras de negócio puras.
+2. **Testes de integração de rota** (`tests/integration/routes/`) — sobem a aplicação Fastify completa via `app.inject()` e validam o ciclo HTTP de ponta a ponta com Prisma mockado (`vitest-mock-extended`).
 
 ### Resultado atual
+
 ```
-Test Files  10 passed (10)
-     Tests  58 passed (58)
-  Duration  < 1 segundo
+Test Files  25 passed (25)
+     Tests  191 passed (191)
+Coverage   Statements 86.52% | Branches 81.95% | Functions 89.83% | Lines 86.52%
 ```
 
-### Como um teste é escrito
+### Scripts disponíveis
+
+```bash
+npm test                 # roda toda a suite (use case + integração)
+npm run test:watch       # modo watch
+npm run test:routes      # somente os testes de rota
+npm run test:coverage    # gera relatório em ./coverage (text, html, lcov, json)
+```
+
+Abra `coverage/index.html` para o relatório navegável por arquivo.
+
+### Estrutura do diretório `tests/`
+
+```
+tests/
+├── setup.ts                       # mock global de Prisma, Resend, Gemini, Google Auth
+├── utils/
+│   ├── constants.ts               # HTTP, ROLE, APPOINTMENT, SEED, FAKE
+│   ├── factories.ts               # classe Factory: clinic(), owner(), tutor(), patient(), ...
+│   └── app-builder.ts             # classe TestApp: build(), injectAuth(), signToken()
+└── integration/routes/
+    ├── auth.spec.ts               # 21 testes — register, login, refresh, logout, me, password
+    ├── clinic.spec.ts             # 10 testes — get/patch /clinics/me + verifyRole
+    ├── tutor.spec.ts              # 12 testes
+    ├── patient.spec.ts            #  9 testes
+    ├── appointment.spec.ts        # 17 testes
+    ├── clinical.spec.ts           # 14 testes (inclui geração de PDF)
+    ├── vaccination.spec.ts        #  9 testes
+    ├── exam.spec.ts               #  5 testes
+    ├── dashboard.spec.ts          #  9 testes
+    ├── portal.spec.ts             #  7 testes
+    └── health.spec.ts             #  5 testes
+```
+
+### Como um teste de integração é escrito
 
 ```typescript
-describe('CancelAppointmentUseCase', () => {
-  it('deve cancelar com justificativa válida', async () => {
-    const repo = new InMemoryAppointmentsRepository()  // banco falso na memória
-    const appointment = await repo.create({ ... })
+// tests/integration/routes/appointment.spec.ts
+describe('POST /appointments', () => {
+  it.each(APPOINTMENT.CATEGORIES)(
+    'cria agendamento da categoria %s com 201',
+    async (category) => {
+      prismaMock.patient.findFirst.mockResolvedValue(Factory.patient() as never)
+      prismaMock.user.findUnique.mockResolvedValue(Factory.owner() as never)
+      prismaMock.appointment.create.mockResolvedValue(Factory.appointment({ category }) as never)
 
-    const sut = new CancelAppointmentUseCase(repo)
-    const result = await sut.execute({
-      appointmentId: appointment.id,
-      reason: 'Paciente não compareceu',
+      const response = await app.injectAuth({
+        method: 'POST',
+        url: '/appointments',
+        payload: validBody(category),
+      })
+
+      expect(response.statusCode).toBe(HTTP.CREATED)
+      expect(response.json().appointment.category).toBe(category)
+    },
+  )
+})
+```
+
+Pontos a observar:
+- `it.each(APPOINTMENT.CATEGORIES)` — **teste parametrizado** percorre as 4 categorias em um único caso.
+- `HTTP.CREATED`, `APPOINTMENT.CATEGORIES` — **sem magic numbers/strings**.
+- `Factory.*`, `app.injectAuth` — **sem repetição**, dependências encapsuladas em classes.
+
+---
+
+## 10. Histórias de Usuário × Implementação × Critérios PC2
+
+Tabela-resumo (16/16 implementadas). Logo abaixo, cada US tem **arquivo de produção**, **trecho de teste de integração** e **quais critérios do PC2 ela demonstra**.
+
+| US | Feature | Rota(s) | Spec de integração |
+|---|---|---|---|
+| US01 | Login/Logout | `POST /auth/login`, `DELETE /auth/logout` | `tests/integration/routes/auth.spec.ts` |
+| US02 | Painel Inicial | `GET /dashboard/daily` | `tests/integration/routes/dashboard.spec.ts` |
+| US03 | Dashboard Gerencial | `GET /dashboard/admin`, `/admin/appointments-trend` | `tests/integration/routes/dashboard.spec.ts` |
+| US04 | Listagem de Pacientes | `GET /patients` | `tests/integration/routes/patient.spec.ts` |
+| US05 | Cadastro Paciente e Tutor | `POST /patients`, `POST /tutors` | `tests/integration/routes/{patient,tutor}.spec.ts` |
+| US06 | Agenda Diária | `GET /appointments` | `tests/integration/routes/appointment.spec.ts` |
+| US07 | Criar Agendamento | `POST /appointments` | `tests/integration/routes/appointment.spec.ts` |
+| US08 | Cancelar/Reagendar | `DELETE /appointments/:id`, `PATCH .../reschedule` | `tests/integration/routes/appointment.spec.ts` |
+| US09 | Registro de Atendimento | `POST /clinical-records` + `PUT` + `PATCH /finalize` | `tests/integration/routes/clinical.spec.ts` |
+| US10 | Receituário PDF | `GET /clinical-records/:id/prescription` | `tests/integration/routes/clinical.spec.ts` |
+| US11 | Histórico Clínico | `GET /clinical-records/patient/:id` | `tests/integration/routes/clinical.spec.ts` |
+| US12 | Exames Anexados | `POST /exams/upload`, `GET /exams/patient/:id` | `tests/integration/routes/exam.spec.ts` |
+| US13 | Resumo por IA | `POST /clinical-records/:id/ai-summary` | `tests/integration/routes/clinical.spec.ts` |
+| US14 | Dashboard do Tutor | `GET /portal/dashboard` | `tests/integration/routes/portal.spec.ts` |
+| US15 | Alertas iougurt Care | `GET /portal/alerts` | `tests/integration/routes/portal.spec.ts` |
+| US16 | Histórico Visão Tutor | `GET /portal/patients/:id/history` | `tests/integration/routes/portal.spec.ts` |
+
+---
+
+### Exemplos representativos (4 das 16 USes)
+
+Cada bloco escolhe **uma técnica diferente** do PC2 para ilustrar — os outros specs seguem o mesmo padrão.
+
+#### US05 — Cadastro Tutor (foco: **Utils + Parametrização**)
+
+```typescript
+// src/modules/tutor/infra/http/controllers/createTutorController.ts
+cpf: z.string()
+  .refine((val) => isValidCpf(val), { message: 'CPF inválido' })  // util compartilhado
+  .transform((val) => onlyDigits(val)),
+```
+
+```typescript
+// tests/integration/routes/tutor.spec.ts
+it.each([
+  { name: 'CPF inválido', body: { ...VALID_TUTOR_BODY, cpf: '00000000000' } },
+  { name: 'sem fullName', body: { ...VALID_TUTOR_BODY, fullName: '' } },
+  { name: 'phone curto', body: { ...VALID_TUTOR_BODY, phone: '11' } },
+  { name: 'email inválido', body: { ...VALID_TUTOR_BODY, email: 'nope' } },
+])('rejeita payload inválido ($name) com 422', async ({ body }) => {
+  const response = await app.injectAuth({ method: 'POST', url: '/tutors', payload: body })
+  expect(response.statusCode).toBe(HTTP.UNPROCESSABLE)
+})
+```
+
+#### US07 — Criar Agendamento (foco: **Parametrização pelo enum**)
+
+```typescript
+// tests/integration/routes/appointment.spec.ts
+it.each(APPOINTMENT.CATEGORIES)(    // 4 categorias em 1 caso
+  'cria agendamento da categoria %s com 201',
+  async (category) => {
+    prismaMock.appointment.create.mockResolvedValue(Factory.appointment({ category }) as never)
+    const response = await app.injectAuth({
+      method: 'POST', url: '/appointments', payload: validBody(category),
     })
+    expect(response.statusCode).toBe(HTTP.CREATED)
+  },
+)
+```
 
-    expect(result.status).toBe('CANCELLED')
-    expect(result.cancelReason).toBe('Paciente não compareceu')
+#### US10 — Receituário PDF (foco: **Sem magic numbers**)
+
+```typescript
+// src/modules/clinical/useCases/generatePrescriptionUseCase.ts
+const PAGE_WIDTH = 595.28
+const MARGIN_X = 50
+const TOP_BRAND_BAR_H = 18
+const BOTTOM_BRAND_BAR_H = 18
+const FOOTER_CONTENT_GAP = 6
+```
+
+```typescript
+// tests/integration/routes/clinical.spec.ts
+it('gera PDF quando prontuário está finalizado e possui prescrições', async () => {
+  prismaMock.clinicalRecord.findUnique.mockResolvedValue({
+    ...Factory.clinicalRecord({ finalized: true, prescriptions: 'Amoxicilina 250mg…' }),
+    patient: { ...Factory.patient(), tutor: Factory.tutor(), clinic: Factory.clinic() },
+    vet: Factory.owner(),
+  } as never)
+
+  const response = await app.injectAuth({
+    method: 'GET', url: `/clinical-records/${SEED.RECORD_ID}/prescription`,
   })
+
+  expect(response.statusCode).toBe(HTTP.OK)
+  expect(response.headers['content-type']).toContain('application/pdf')
+})
+```
+
+#### US16 — Histórico do Pet (foco: **Guard de segurança + Integração**)
+
+```typescript
+// src/modules/portal/useCases/getTutorPatientHistoryUseCase.ts
+const ownsPet = tutor.patients.some(p => p.id === patientId)
+if (!ownsPet) throw new AppError('Você não tem permissão para acessar os dados deste animal.', 403)
+```
+
+```typescript
+// tests/integration/routes/portal.spec.ts
+it('rejeita pet que não pertence ao tutor com 403', async () => {
+  prismaMock.user.findUnique.mockResolvedValue({
+    ...Factory.tutorUser(),
+    tutorAccount: { ...Factory.tutor(), patients: [] },   // sem pets
+  } as never)
+  const response = await app.injectAuth(
+    { method: 'GET', url: `/portal/patients/${SEED.PATIENT_ID}/history` },
+    { role: ROLE.TUTOR, userId: SEED.TUTOR_USER_ID },
+  )
+  expect(response.statusCode).toBe(HTTP.FORBIDDEN)
 })
 ```
 
 ---
 
-## 10. Histórias de Usuário × Implementação
+## 10.1. Critérios PC2 × Onde estão no código
 
-| US | Feature | Rota(s) | Status |
-|---|---|---|---|
-| US01 | Login/Logout | `POST /auth/login`, `DELETE /auth/logout` | ✅ |
-| US02 | Painel Inicial | `GET /dashboard` | ✅ |
-| US03 | Dashboard Gerencial | `GET /dashboard/metrics` | ✅ |
-| US04 | Listagem de Pacientes | `GET /patients` | ✅ |
-| US05 | Cadastro Paciente e Tutor | `POST /patients`, `POST /tutors` | ✅ |
-| US06 | Agenda Diária | `GET /appointments` | ✅ |
-| US07 | Criar Agendamento | `POST /appointments` | ✅ |
-| US08 | Cancelar/Reagendar | `DELETE /appointments/:id`, `PATCH .../reschedule` | ✅ |
-| US09 | Registro de Atendimento | `POST /clinical-records` + `PUT` + `PATCH /finalize` | ✅ |
-| US10 | Receituário PDF | `GET /clinical-records/:id/prescription` | ✅ |
-| US11 | Histórico Clínico | `GET /clinical-records/patient/:id` | ✅ |
-| US12 | Exames Anexados | `POST /exams/upload`, `GET /exams/patient/:id` | ✅ |
-| US13 | Resumo por IA | `POST /clinical-records/:id/ai-summary` | ✅ |
-| US14 | Dashboard do Tutor | `GET /portal/dashboard` | ✅ |
-| US15 | Alertas iougurt Care | `GET /portal/alerts` | ✅ |
-| US16 | Histórico Visão Tutor | `GET /portal/patients/:id/history` | ✅ |
+Mapa direto dos itens do quadro (PC2) para arquivos e linhas reais do repositório.
 
-**16/16 Histórias de Usuário implementadas no backend.**
+| Item do quadro | Onde está | Evidência |
+|---|---|---|
+| **CI/CD** | `.github/workflows/main.yml` | job `lint-e-testes` com service container Postgres, typecheck, `prisma migrate deploy`, `vitest run --coverage`, upload de artifact `coverage/`; job `build-docker` com cache GHA |
+| **Clean Code** | `src/modules/*` | Clean Architecture: `IRepository` separado de `PrismaRepository`, useCases sem dependência de Fastify, factories isolam composição |
+| **Testes Parametrizados** | `tests/integration/routes/*.spec.ts` | `it.each(APPOINTMENT.CATEGORIES)` em `appointment.spec.ts:25`; `it.each(['COMPLETED', 'CANCELLED', 'IN_PROGRESS'])` em `appointment.spec.ts:118`; `it.each([6, 91, -1])` em `dashboard.spec.ts:71` |
+| **Integração (sobe o app)** | `tests/utils/app-builder.ts` | classe `TestApp` chama `app.ready()` e expõe `inject` / `injectAuth` |
+| **Aponta para o Endpoint Container** | `.github/workflows/main.yml` + `docker-compose.yml` | CI tem `services.postgres: postgres:16-alpine` ; localmente `docker compose up` levanta `iougurt-db` + `iougurt-api` e os testes E2E batem em `http://localhost:3001` |
+| **Evitar Repetições + OO** | `tests/utils/{app-builder,factories,constants}.ts` | classes `TestApp` e `Factory` reusadas em todos os 11 specs; constantes em objeto agrupado |
+| **Utils** | `src/shared/documents.ts` (produção), `tests/utils/*` (teste) | `isValidCpf`, `isValidCnpj`, `onlyDigits` centralizados; `Factory.*`, `HTTP.*`, `ROLE.*` em utils de teste |
+| **Números Mágicos NÃO** | `tests/utils/constants.ts` + `src/modules/clinical/useCases/generatePrescriptionUseCase.ts` | `HTTP.OK = 200`, `HTTP.CREATED = 201`, `SEED.PATIENT_ID`, `PAGE_WIDTH = 595.28`, `MARGIN_X = 50`, `TOP_BRAND_BAR_H = 18` |
+| **docstring** | `src/modules/*/infra/http/*Routes.ts` | cada rota tem `schema: { summary: 'descrição', tags: [...], body: <ZodSchema> }` — vira documentação Swagger em `/docs` (ver exemplo abaixo) |
+| **Comentários Reduzidos** | `tests/integration/routes/*.spec.ts` | testes sem comentários internos — nomes (`'rejeita payload inválido ($name) com 422'`) e constantes auto-explicam |
+| **EMOJI NÃO** | `tests/`, `src/modules/*` | nenhum emoji nos testes/utils criados; ARCHITECTURE.md usa emojis só na tabela de checklist (status visual), não no código |
+| **Laços de Repetição O(?)** | `src/modules/patient/infra/repositories/PrismaPatientsRepository.ts:53-56`, `src/modules/dashboard/infra/repositories/PrismaDashboardRepository.ts` | `Promise.all([findMany, count])` evita query sequencial; `groupBy` no banco em vez de loop no app |
+| **Lint / Typecheck** | `package.json` + CI | `npm run typecheck` (TSC noEmit) roda antes dos testes no workflow |
+
+### Como o item **"docstring"** aparece em rotas
+
+Cada rota documenta a si mesma via schema do Fastify — vira a docstring que alimenta o Swagger em `/docs`:
+
+```typescript
+// src/modules/auth/infra/http/authRoutes.ts
+app.post('/login', {
+  schema: {
+    tags: ['Auth'],
+    summary: 'Autenticar com email e senha',
+    body: authenticateBodySchema,
+  },
+}, authenticateController)
+
+app.post('/register/vet', {
+  preHandler: [verifyJwt, verifyRole('OWNER')],
+  schema: {
+    tags: ['Auth'],
+    summary: 'Criar conta de Veterinário (apenas OWNER)',
+    body: registerVetBodySchema,
+    security: [{ bearerAuth: [] }],
+  },
+}, registerVetController)
+```
+
+### Anti-padrões do quadro que evitamos
+
+A coluna direita da foto lista nomes ruins (`aux`, `A`, `j`, `afunda = 500`, `Quantidade funcionarios`). Confira que **nada disso aparece no nosso código de teste**:
+
+- variáveis sempre com nome semântico (`response`, `payload`, `category`, `tutor`)
+- nenhum literal numérico solto — toda comparação de status usa `HTTP.OK` / `HTTP.CREATED` / `HTTP.FORBIDDEN`
+- nenhuma string mágica de status — usa `APPOINTMENT.STATUSES` e `ROLE.*`
+- nenhum UUID hardcoded fora de `SEED.*`
+
+---
+
+## 10.2. Roteiro de Apresentação (PC2)
+
+Sugestão de sequência para a banca, ~10 minutos.
+
+### 1. Abertura (1min)
+- Mostrar o app rodando: `docker compose up -d` → abrir `http://localhost:3001/docs` (Swagger). Cada rota tem `summary` (item **docstring** do quadro).
+
+### 2. Modelo físico do banco (1min)
+- Abrir `ARCHITECTURE.md` na seção **4 → Modelo físico (ER)** (diagrama Mermaid).
+- Mostrar `prisma/schema.prisma` como a fonte de verdade.
+
+### 3. Arquitetura — Clean Code (1min)
+- `ARCHITECTURE.md` seção 3: explicar `useCase ↔ IRepository ↔ PrismaRepository`.
+- Item **Clean Code** + **OO + Evitar Repetições**.
+
+### 4. Testes de Integração (3min) — o coração do PC2
+- Abrir `tests/utils/app-builder.ts` — classe `TestApp` é o "aponta para o endpoint container" do quadro.
+- Abrir `tests/utils/constants.ts` — `HTTP`, `ROLE`, `SEED`. Item **Sem magic numbers**.
+- Abrir `tests/integration/routes/appointment.spec.ts` linha 25 — `it.each(APPOINTMENT.CATEGORIES)`. Item **Testes parametrizados**.
+- Mostrar `it.each(['COMPLETED', 'CANCELLED', 'IN_PROGRESS'])` linha 118 — outro exemplo.
+
+### 5. Coverage (1min)
+- Rodar `npm run test:coverage` ao vivo.
+- Abrir `coverage/index.html` → mostrar 86%+ global e detalhar módulos `clinical/` e `auth/`.
+
+### 6. CI/CD com container (2min)
+- Abrir `.github/workflows/main.yml`.
+- Mostrar `services.postgres` (item **container**), `prisma migrate deploy`, `npm run test:coverage`, upload do artifact.
+- Job `build-docker` empilha a imagem.
+
+### 7. Laços de Repetição O(?) (30s)
+- Abrir `src/modules/patient/infra/repositories/PrismaPatientsRepository.ts:53` — `Promise.all([findMany, count])` em vez de duas queries sequenciais.
+
+### 8. Encerramento (30s)
+- Tabela 10.1 do `ARCHITECTURE.md` é o checklist final dos critérios.
+
+### Comandos para ter colados na pasta
+```bash
+docker compose up -d --build   # sobe API + DB
+docker compose logs -f api     # acompanha logs
+npm test                       # 191 testes em segundos
+npm run test:coverage          # gera relatório navegável
+npm run test:routes            # só os de integração de rota
+xdg-open coverage/index.html
+```
 
 ---
 
@@ -438,8 +690,8 @@ describe('CancelAppointmentUseCase', () => {
 ### Por que Fastify e não Express?
 Fastify é 2-3x mais rápido, tem suporte nativo a JSON Schema e integra perfeitamente com Zod via `fastify-type-provider-zod`, gerando tipagem TypeScript + validação + Swagger a partir da mesma definição Zod.
 
-### Por que repositórios in-memory?
-Permitem testar 100% das regras de negócio sem Docker, sem banco, sem rede. Os 58 testes rodam em < 1 segundo no total.
+### Por que repositórios in-memory + Prisma mockado?
+Para os **use cases**, repositórios in-memory permitem testar regras de negócio puras sem banco. Para os **testes de integração de rota**, mockamos o Prisma client com `vitest-mock-extended` — assim o app Fastify sobe inteiro, mas as queries são determinísticas. As 191 specs rodam em ~3 segundos.
 
 ### Por que Refresh Token no cookie?
 Tokens no `localStorage` são vulneráveis a XSS. O cookie `HttpOnly` não é acessível via JavaScript. O access token (curta duração, 30min) fica no body da resposta.

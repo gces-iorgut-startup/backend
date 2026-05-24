@@ -6,18 +6,27 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  TEST_DB_USER: iougurt
+  TEST_DB_PASSWORD: iougurt
+  TEST_DB_NAME: iougurt_test
+  TEST_JWT_SECRET: test-jwt-secret
+  NODE_VERSION: '20'
+
 jobs:
   lint-e-testes:
-    name: Linter e Testes
+    name: Linter, Testes e Coverage
     runs-on: ubuntu-latest
 
     services:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: ${{ secrets.DB_USER_TEST }}
-          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD_TEST }}
+          POSTGRES_USER: iougurt
+          POSTGRES_PASSWORD: iougurt
           POSTGRES_DB: iougurt_test
+        ports:
+          - 5432:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -30,28 +39,42 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Instalar dependências
         run: npm ci
 
-      - name: Rodar Linter (Typecheck)
+      - name: Gerar Prisma Client
+        run: npx prisma generate
+
+      - name: Rodar Typecheck
         run: npm run typecheck
 
-      - name: Rodar Testes
+      - name: Aplicar migrations no container Postgres
         env:
-          DATABASE_URL: postgresql://${{ secrets.DB_USER_TEST }}:${{ secrets.DB_PASSWORD_TEST }}@postgres:5432/iougurt_test?schema=public
-          JWT_SECRET: ${{ secrets.JWT_SECRET_TEST }}
-        run: |
-          npx prisma generate
-          npx vitest run
+          DATABASE_URL: postgresql://iougurt:iougurt@localhost:5432/iougurt_test?schema=public
+        run: npx prisma migrate deploy
+
+      - name: Rodar Testes com Coverage
+        env:
+          DATABASE_URL: postgresql://iougurt:iougurt@localhost:5432/iougurt_test?schema=public
+          JWT_SECRET: test-jwt-secret
+          NODE_ENV: test
+        run: npm run test:coverage
+
+      - name: Upload do relatório de Coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage
+          retention-days: 7
 
   build-docker:
-    name: Build e Push da Imagem Docker
+    name: Build da Imagem Docker
     needs: lint-e-testes
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
 
     steps:
       - uses: actions/checkout@v4
@@ -74,24 +97,3 @@ jobs:
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/iougurt-api:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-  # deploy:
-  #   name: Deploy para o Servidor
-  #   needs: build-docker
-  #   runs-on: ubuntu-latest
-  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-
-  #     - name: Deploy via SSH
-  #       uses: appleboy/ssh-action@v1.0.3
-  #       with:
-  #         host: ${{ secrets.SSH_HOST }}
-  #         username: ${{ secrets.SSH_USER }}
-  #         key: ${{ secrets.SSH_PRIVATE_KEY }}
-  #         script: |
-  #           cd ~/app/iougurt
-  #           docker compose pull api
-  #           docker compose up -d
