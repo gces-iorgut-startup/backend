@@ -6,6 +6,11 @@ const envSchema = z.object({
   APP_URL: z.string().url().default('http://localhost:3000'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   JWT_SECRET: z.string().min(1),
+  // Origens permitidas para CORS. Use '*' para liberar todas (default) ou uma
+  // lista separada por vírgula (ex.: "https://iogurt.lablivre.rocks").
+  // Com o frontend servido pelo mesmo domínio (via proxy nginx), as chamadas
+  // são same-origin e o CORS nem é exercido — isto é uma rede de segurança.
+  CORS_ORIGIN: z.string().default('*'),
   PASSWORD_RESET_SECRET: z.string().default(''),
   JWT_EXPIRES_IN: z.string().default('30m'),
   REFRESH_TOKEN_EXPIRES_IN: z.string().default('7d'),

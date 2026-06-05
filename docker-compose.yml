@@ -3,6 +3,8 @@ services:
     image: postgres:16-alpine
     container_name: iougurt-db
     restart: unless-stopped
+    networks:
+      - iougurt
     environment:
       POSTGRES_USER: iougurt
       POSTGRES_PASSWORD: iougurt
@@ -23,6 +25,8 @@ services:
       target: dev
     container_name: iougurt-api
     restart: unless-stopped
+    networks:
+      - iougurt
     env_file:
       - .env
     ports:
@@ -36,3 +40,7 @@ services:
 
 volumes:
   pgdata:
+
+networks:
+  iougurt:
+    name: iougurt-shared
