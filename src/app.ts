@@ -57,7 +57,18 @@ app.register(fastifySwaggerUi, {
 })
 
 // ── Plugins ───────────────────────────────────────────
-app.register(fastifyCors, { origin: '*' })
+// Origens vêm de env (CORS_ORIGIN). Default '*' mantém o comportamento antigo
+// (libera todas, sem credenciais). Quando uma lista explícita é configurada,
+// passamos a refletir só essas origens e habilitamos credenciais — o wildcard
+// '*' é incompatível com Access-Control-Allow-Credentials nos navegadores.
+const corsOrigins = env.CORS_ORIGIN.split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean)
+const allowAllOrigins = corsOrigins.includes('*')
+app.register(fastifyCors, {
+  origin: allowAllOrigins ? '*' : corsOrigins,
+  credentials: !allowAllOrigins,
+})
 
 app.register(fastifyJwt, {
   secret: env.JWT_SECRET,
