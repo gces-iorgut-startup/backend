@@ -149,7 +149,9 @@ describe('Appointment routes', () => {
 
   describe('PATCH /appointments/:id/reschedule', () => {
     it('reagenda quando status é SCHEDULED', async () => {
-      prismaMock.appointment.findFirst.mockResolvedValue(Factory.appointment() as never)
+      prismaMock.appointment.findFirst
+        .mockResolvedValueOnce(Factory.appointment() as never) // findById
+        .mockResolvedValueOnce(null as never)                  // findConflict → sem conflito
       prismaMock.appointment.update.mockResolvedValue(Factory.appointment() as never)
 
       const response = await app.injectAuth({

@@ -151,6 +151,7 @@ model Appointment {
   vet            User            @relation("vet_appointments", fields: [vetId], references: [id])
   clinicalRecord ClinicalRecord?
 
+  @@index([vetId, dateTime])
   @@map("appointments")
 }
 
