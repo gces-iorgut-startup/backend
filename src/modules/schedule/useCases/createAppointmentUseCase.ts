@@ -30,6 +30,10 @@ export class CreateAppointmentUseCase {
       throw Errors.badRequest('O horário de fim deve ser posterior ao horário de início.')
     }
 
+    const effectiveEnd = input.endDateTime ?? new Date(input.dateTime.getTime() + 15 * 60 * 1000)
+    const conflict = await this.appointmentsRepository.findConflict(input.vetId, input.dateTime, effectiveEnd)
+    if (conflict) throw Errors.conflict('Este horário já está ocupado.')
+
     return this.appointmentsRepository.create(appointmentData)
   }
 }

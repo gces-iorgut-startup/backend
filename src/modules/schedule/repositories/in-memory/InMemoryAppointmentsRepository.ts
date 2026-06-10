@@ -47,6 +47,16 @@ export class InMemoryAppointmentsRepository implements IAppointmentsRepository {
     return this.items[index]
   }
 
+  async findConflict(vetId: string, dateTime: Date, endDateTime: Date, excludeId?: string): Promise<Appointment | null> {
+    return this.items.find(a =>
+      a.vetId === vetId &&
+      a.status !== AppointmentStatus.CANCELLED &&
+      (!excludeId || a.id !== excludeId) &&
+      a.dateTime < endDateTime &&
+      (a.endDateTime === null || a.endDateTime > dateTime)
+    ) ?? null
+  }
+
   async listByDay(date: Date, clinicId: string, vetId?: string): Promise<AppointmentWithRelations[]> {
     const dateStr = date.toISOString().slice(0, 10) // 'YYYY-MM-DD'
     return this.items.filter(a => {

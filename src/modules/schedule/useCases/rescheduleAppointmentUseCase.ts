@@ -31,6 +31,10 @@ export class RescheduleAppointmentUseCase {
       throw new AppError('O horário de fim deve ser posterior ao horário de início.', 400)
     }
 
+    const effectiveEnd = newEndDateTime ?? new Date(newDateTime.getTime() + 15 * 60 * 1000)
+    const conflict = await this.appointmentsRepository.findConflict(appointment.vetId, newDateTime, effectiveEnd, appointmentId)
+    if (conflict) throw new AppError('Este horário já está ocupado.', 409)
+
     return this.appointmentsRepository.reschedule(appointmentId, newDateTime, newEndDateTime)
   }
 }

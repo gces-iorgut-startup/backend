@@ -150,6 +150,42 @@ describe('CancelAppointmentUseCase', () => {
   })
 })
 
+describe('CreateAppointmentUseCase — conflitos', () => {
+  it('deve bloquear double-booking do mesmo veterinário no mesmo horário', async () => {
+    const { appointmentsRepo, patientsRepo, usersRepo, patientId, vetId } = await setupRepos()
+    const sut = new CreateAppointmentUseCase(appointmentsRepo, patientsRepo, usersRepo)
+    await sut.execute({ patientId, vetId, clinicId: CLINIC_ID, dateTime: new Date('2099-03-01T09:00:00'), endDateTime: new Date('2099-03-01T09:15:00'), category: 'OBSERVATION' })
+    await expect(sut.execute({ patientId, vetId, clinicId: CLINIC_ID, dateTime: new Date('2099-03-01T09:00:00'), endDateTime: new Date('2099-03-01T09:15:00'), category: 'VACCINATION' }))
+      .rejects.toMatchObject({ statusCode: 409 })
+  })
+
+  it('deve permitir o mesmo horário para veterinários diferentes', async () => {
+    const { appointmentsRepo, patientsRepo, usersRepo, patientId, vetId } = await setupRepos()
+    const vet2 = await usersRepo.create({ name: 'Dr. Outro', email: 'outro@g.com', passwordHash: 'x', role: 'VET', clinicId: CLINIC_ID })
+    const sut = new CreateAppointmentUseCase(appointmentsRepo, patientsRepo, usersRepo)
+    await sut.execute({ patientId, vetId, clinicId: CLINIC_ID, dateTime: new Date('2099-03-01T09:00:00'), endDateTime: new Date('2099-03-01T09:15:00'), category: 'OBSERVATION' })
+    const result = await sut.execute({ patientId, vetId: vet2.id, clinicId: CLINIC_ID, dateTime: new Date('2099-03-01T09:00:00'), endDateTime: new Date('2099-03-01T09:15:00'), category: 'OBSERVATION' })
+    expect(result.status).toBe('SCHEDULED')
+  })
+
+  it('deve bloquear agendamento que se sobrepõe parcialmente a outro', async () => {
+    const { appointmentsRepo, patientsRepo, usersRepo, patientId, vetId } = await setupRepos()
+    const sut = new CreateAppointmentUseCase(appointmentsRepo, patientsRepo, usersRepo)
+    await sut.execute({ patientId, vetId, clinicId: CLINIC_ID, dateTime: new Date('2099-03-01T09:00:00'), endDateTime: new Date('2099-03-01T10:00:00'), category: 'SURGICAL' })
+    await expect(sut.execute({ patientId, vetId, clinicId: CLINIC_ID, dateTime: new Date('2099-03-01T09:30:00'), endDateTime: new Date('2099-03-01T09:45:00'), category: 'OBSERVATION' }))
+      .rejects.toMatchObject({ statusCode: 409 })
+  })
+
+  it('deve permitir agendar no mesmo slot após cancelamento', async () => {
+    const { appointmentsRepo, patientsRepo, usersRepo, patientId, vetId } = await setupRepos()
+    const sut = new CreateAppointmentUseCase(appointmentsRepo, patientsRepo, usersRepo)
+    const appt = await sut.execute({ patientId, vetId, clinicId: CLINIC_ID, dateTime: new Date('2099-03-01T09:00:00'), endDateTime: new Date('2099-03-01T09:15:00'), category: 'OBSERVATION' })
+    await new CancelAppointmentUseCase(appointmentsRepo).execute({ appointmentId: appt.id, clinicId: CLINIC_ID, reason: 'Paciente cancelou' })
+    const result = await sut.execute({ patientId, vetId, clinicId: CLINIC_ID, dateTime: new Date('2099-03-01T09:00:00'), endDateTime: new Date('2099-03-01T09:15:00'), category: 'OBSERVATION' })
+    expect(result.status).toBe('SCHEDULED')
+  })
+})
+
 describe('RescheduleAppointmentUseCase', () => {
   it('deve reagendar um agendamento SCHEDULED para data futura', async () => {
     const pRepo = new InMemoryPatientsRepository()
@@ -185,5 +221,30 @@ describe('RescheduleAppointmentUseCase', () => {
         newDateTime: new Date('2020-01-01'),
       })
     ).rejects.toMatchObject({ statusCode: 400 })
+  })
+
+  it('deve bloquear reagendamento para horário já ocupado por outro agendamento', async () => {
+    const pRepo = new InMemoryPatientsRepository()
+    const uRepo = new InMemoryUsersRepository()
+    const aRepo = new InMemoryAppointmentsRepository()
+    const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'Cachorro', clinicId: CLINIC_ID })
+    const vet = await uRepo.create({ name: 'Dr. Vet', email: 'vet7@g.com', passwordHash: 'x', role: 'VET', clinicId: CLINIC_ID })
+    const createUC = new CreateAppointmentUseCase(aRepo, pRepo, uRepo)
+    await createUC.execute({ patientId: patient.id, vetId: vet.id, clinicId: CLINIC_ID, dateTime: new Date('2099-05-01T10:00:00'), endDateTime: new Date('2099-05-01T10:15:00'), category: 'OBSERVATION' })
+    const appt2 = await createUC.execute({ patientId: patient.id, vetId: vet.id, clinicId: CLINIC_ID, dateTime: new Date('2099-05-01T11:00:00'), endDateTime: new Date('2099-05-01T11:15:00'), category: 'EXAM' })
+    await expect(
+      new RescheduleAppointmentUseCase(aRepo).execute({ appointmentId: appt2.id, clinicId: CLINIC_ID, newDateTime: new Date('2099-05-01T10:00:00'), newEndDateTime: new Date('2099-05-01T10:15:00') })
+    ).rejects.toMatchObject({ statusCode: 409 })
+  })
+
+  it('deve permitir reagendar para o mesmo horário (auto-substituição)', async () => {
+    const pRepo = new InMemoryPatientsRepository()
+    const uRepo = new InMemoryUsersRepository()
+    const aRepo = new InMemoryAppointmentsRepository()
+    const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'Cachorro', clinicId: CLINIC_ID })
+    const vet = await uRepo.create({ name: 'Dr. Vet', email: 'vet8@g.com', passwordHash: 'x', role: 'VET', clinicId: CLINIC_ID })
+    const appt = await new CreateAppointmentUseCase(aRepo, pRepo, uRepo).execute({ patientId: patient.id, vetId: vet.id, clinicId: CLINIC_ID, dateTime: new Date('2099-05-01T10:00:00'), endDateTime: new Date('2099-05-01T10:15:00'), category: 'OBSERVATION' })
+    const result = await new RescheduleAppointmentUseCase(aRepo).execute({ appointmentId: appt.id, clinicId: CLINIC_ID, newDateTime: new Date('2099-05-01T10:00:00'), newEndDateTime: new Date('2099-05-01T10:15:00') })
+    expect(result.dateTime).toEqual(new Date('2099-05-01T10:00:00'))
   })
 })
