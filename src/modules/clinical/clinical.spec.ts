@@ -94,6 +94,7 @@ describe('Clinical Records Module', () => {
 
   it('should finalize clinical record and mark appointment as COMPLETED', async () => {
     const vetId = randomUUID()
+    const endDateTime = new Date('2099-01-01T10:30:00.000Z')
     const appointment = await appointmentsRepository.create({
       patientId: 'patient-1',
       vetId,
@@ -111,12 +112,14 @@ describe('Clinical Records Module', () => {
       recordId: record.id,
       vetId,
       clinicId: 'clinic-1',
+      endDateTime,
     })
 
     expect(finalized.finalized).toBe(true)
 
     const appt = await appointmentsRepository.findById(appointment.id, 'clinic-1')
     expect(appt?.status).toBe('COMPLETED')
+    expect(appt?.endDateTime?.toISOString()).toBe(endDateTime.toISOString())
   })
 
   it('should not allow editing a finalized record', async () => {

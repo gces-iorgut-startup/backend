@@ -1,7 +1,11 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { startClinicalRecordController, startClinicalRecordBodySchema } from './controllers/startClinicalRecordController'
 import { updateClinicalRecordController, updateClinicalRecordParamsSchema, updateClinicalRecordBodySchema } from './controllers/updateClinicalRecordController'
-import { finalizeClinicalRecordController, finalizeClinicalRecordParamsSchema } from './controllers/finalizeClinicalRecordController'
+import {
+  finalizeClinicalRecordController,
+  finalizeClinicalRecordParamsSchema,
+  finalizeClinicalRecordBodySchema,
+} from './controllers/finalizeClinicalRecordController'
 import { getPatientHistoryController, getPatientHistoryParamsSchema } from './controllers/getPatientHistoryController'
 import { generatePrescriptionController, generatePrescriptionParamsSchema } from './controllers/generatePrescriptionController'
 import { generateAISummaryController, generateAISummaryParamsSchema } from './controllers/generateAISummaryController'
@@ -44,6 +48,7 @@ export const clinicalRoutes: FastifyPluginAsyncZod = async app => {
         summary: 'Finalize Clinical Record',
         tags: ['Clinical Record'],
         params: finalizeClinicalRecordParamsSchema,
+        body: finalizeClinicalRecordBodySchema,
         security: [{ bearerAuth: [] }],
       },
     },

@@ -20,8 +20,14 @@ export class PrismaAppointmentsRepository implements IAppointmentsRepository {
     return prisma.appointment.findFirst({ where: { id, patient: { clinicId } } })
   }
 
-  async updateStatus(id: string, status: AppointmentStatus): Promise<Appointment> {
-    return prisma.appointment.update({ where: { id }, data: { status } })
+  async updateStatus(id: string, status: AppointmentStatus, endDateTime?: Date): Promise<Appointment> {
+    return prisma.appointment.update({
+      where: { id },
+      data: {
+        status,
+        ...(endDateTime !== undefined && { endDateTime }),
+      },
+    })
   }
 
   async findConflict(vetId: string, dateTime: Date, endDateTime: Date, excludeId?: string): Promise<Appointment | null> {
