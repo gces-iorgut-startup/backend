@@ -8,6 +8,7 @@ interface FinalizeClinicalRecordRequest {
   recordId: string
   vetId: string
   clinicId: string
+  endDateTime?: Date
 }
 
 export class FinalizeClinicalRecordUseCase {
@@ -17,7 +18,7 @@ export class FinalizeClinicalRecordUseCase {
     private generateAISummaryUseCase?: GenerateAISummaryUseCase
   ) {}
 
-  async execute({ recordId, vetId, clinicId }: FinalizeClinicalRecordRequest): Promise<ClinicalRecord> {
+  async execute({ recordId, vetId, clinicId, endDateTime }: FinalizeClinicalRecordRequest): Promise<ClinicalRecord> {
     const record = await this.clinicalRecordsRepository.findById(recordId, clinicId)
 
     if (!record) {
@@ -35,7 +36,7 @@ export class FinalizeClinicalRecordUseCase {
     const updatedRecord = await this.clinicalRecordsRepository.update(recordId, { finalized: true })
 
     if (updatedRecord.appointmentId) {
-      await this.appointmentsRepository.updateStatus(updatedRecord.appointmentId, 'COMPLETED')
+      await this.appointmentsRepository.updateStatus(updatedRecord.appointmentId, 'COMPLETED', endDateTime)
     }
 
     if (!this.generateAISummaryUseCase) {

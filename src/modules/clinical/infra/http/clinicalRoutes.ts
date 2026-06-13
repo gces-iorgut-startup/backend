@@ -1,7 +1,10 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { startClinicalRecordController, startClinicalRecordBodySchema } from './controllers/startClinicalRecordController'
 import { updateClinicalRecordController, updateClinicalRecordParamsSchema, updateClinicalRecordBodySchema } from './controllers/updateClinicalRecordController'
-import { finalizeClinicalRecordController, finalizeClinicalRecordParamsSchema } from './controllers/finalizeClinicalRecordController'
+import {
+  finalizeClinicalRecordController,
+  finalizeClinicalRecordParamsSchema,
+} from './controllers/finalizeClinicalRecordController'
 import { getPatientHistoryController, getPatientHistoryParamsSchema } from './controllers/getPatientHistoryController'
 import { generatePrescriptionController, generatePrescriptionParamsSchema } from './controllers/generatePrescriptionController'
 import { generateAISummaryController, generateAISummaryParamsSchema } from './controllers/generateAISummaryController'

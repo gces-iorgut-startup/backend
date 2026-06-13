@@ -40,9 +40,12 @@ export class InMemoryAppointmentsRepository implements IAppointmentsRepository {
     return this.items.find(a => a.id === id && a.patient.clinicId === clinicId) ?? null
   }
 
-  async updateStatus(id: string, status: AppointmentStatus): Promise<Appointment> {
+  async updateStatus(id: string, status: AppointmentStatus, endDateTime?: Date): Promise<Appointment> {
     const index = this.items.findIndex(a => a.id === id)
     this.items[index].status = status
+    if (endDateTime !== undefined) {
+      this.items[index].endDateTime = endDateTime
+    }
     this.items[index].updatedAt = new Date()
     return this.items[index]
   }
