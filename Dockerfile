@@ -24,3 +24,21 @@ USER iougurt
 EXPOSE 3000
 
 CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma generate && npm run dev"]
+
+# ── Production ────────────────────────────────────────
+FROM base AS prod
+
+ENV NODE_ENV=production
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+RUN npx prisma generate && npm run build
+
+RUN chown -R iougurt:iougurt /app
+
+USER iougurt
+
+EXPOSE 3000
+
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]

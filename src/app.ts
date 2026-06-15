@@ -18,6 +18,7 @@ import { vaccinationRoutes } from './modules/clinical/infra/http/vaccinationRout
 import { examRoutes } from './modules/clinical/infra/http/examRoutes'
 import { dashboardRoutes } from './modules/dashboard/infra/http/dashboardRoutes'
 import { portalRoutes } from './modules/portal/infra/http/portalRoutes'
+import { testRoutes } from './modules/test/infra/http/testRoutes'
 
 import fastifySwagger from '@fastify/swagger'
 import fastifySwaggerUi from '@fastify/swagger-ui'
@@ -111,6 +112,7 @@ app.register(vaccinationRoutes, { prefix: '/vaccinations' })
 app.register(examRoutes, { prefix: '/exams' })
 app.register(dashboardRoutes, { prefix: '/dashboard' })
 app.register(portalRoutes, { prefix: '/portal' })
+app.register(testRoutes, { prefix: '/test' })
 
 // ── Error Handler ─────────────────────────────────────
 app.setErrorHandler(errorHandler)
