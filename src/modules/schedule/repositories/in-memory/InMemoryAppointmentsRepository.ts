@@ -6,6 +6,7 @@ import type {
   CreateAppointmentDTO,
   AppointmentWithRelations,
 } from '../IAppointmentsRepository'
+import { DEFAULT_APPOINTMENT_DURATION_MS } from '../IAppointmentsRepository'
 
 export class InMemoryAppointmentsRepository implements IAppointmentsRepository {
   public items: AppointmentWithRelations[] = []
@@ -56,7 +57,9 @@ export class InMemoryAppointmentsRepository implements IAppointmentsRepository {
       a.status !== AppointmentStatus.CANCELLED &&
       (!excludeId || a.id !== excludeId) &&
       a.dateTime < endDateTime &&
-      (a.endDateTime === null || a.endDateTime > dateTime)
+      (a.endDateTime === null
+        ? a.dateTime.getTime() + DEFAULT_APPOINTMENT_DURATION_MS > dateTime.getTime()
+        : a.endDateTime > dateTime)
     ) ?? null
   }
 

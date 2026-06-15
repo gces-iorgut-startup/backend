@@ -3,6 +3,14 @@ import type { AppointmentCategory, AppointmentStatus } from '@prisma/client'
 
 export type { AppointmentCategory, AppointmentStatus }
 
+/**
+ * Duração assumida para agendamentos sem horário de fim (endDateTime null).
+ * Usada tanto no cálculo do fim padrão ao criar quanto na checagem de conflito,
+ * para que ambos os lados concordem: um agendamento sem fim NÃO ocupa o horário
+ * até o infinito — ocupa apenas esta janela padrão a partir do início.
+ */
+export const DEFAULT_APPOINTMENT_DURATION_MS = 15 * 60 * 1000
+
 export type AppointmentWithRelations = Appointment & {
   patient: Pick<Patient, 'id' | 'name' | 'species' | 'clinicId' | 'photoUrl'>
   vet: Pick<User, 'id' | 'name'>

@@ -4,6 +4,7 @@ import type {
   CreateAppointmentDTO,
   AppointmentWithRelations,
 } from '../../repositories/IAppointmentsRepository'
+import { DEFAULT_APPOINTMENT_DURATION_MS } from '../../repositories/IAppointmentsRepository'
 import { type Appointment, AppointmentStatus } from '@prisma/client'
 
 const withRelations = {
@@ -38,8 +39,14 @@ export class PrismaAppointmentsRepository implements IAppointmentsRepository {
         ...(excludeId && { id: { not: excludeId } }),
         dateTime: { lt: endDateTime },
         OR: [
-          { endDateTime: null },
           { endDateTime: { gt: dateTime } },
+          // Agendamento sem fim: assume duração padrão (igual ao create).
+          // Só conflita se começou dentro da janela padrão antes do novo início,
+          // em vez de bloquear todos os horários futuros para sempre.
+          {
+            endDateTime: null,
+            dateTime: { gt: new Date(dateTime.getTime() - DEFAULT_APPOINTMENT_DURATION_MS) },
+          },
         ],
       },
     })

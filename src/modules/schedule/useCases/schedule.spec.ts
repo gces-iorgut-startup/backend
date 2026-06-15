@@ -176,6 +176,24 @@ describe('CreateAppointmentUseCase — conflitos', () => {
       .rejects.toMatchObject({ statusCode: 409 })
   })
 
+  it('não deve bloquear um atendimento quando há um anterior SEM fim em outro horário', async () => {
+    const { appointmentsRepo, patientsRepo, usersRepo, patientId, vetId } = await setupRepos()
+    const sut = new CreateAppointmentUseCase(appointmentsRepo, patientsRepo, usersRepo)
+    // Atendimento "direto" anterior, criado sem endDateTime (fica null).
+    await sut.execute({ patientId, vetId, clinicId: CLINIC_ID, dateTime: new Date('2099-03-01T09:00:00'), category: 'OBSERVATION' })
+    // Novo atendimento bem depois NÃO deve conflitar (sem fim != duração infinita).
+    const result = await sut.execute({ patientId, vetId, clinicId: CLINIC_ID, dateTime: new Date('2099-03-01T14:00:00'), category: 'OBSERVATION' })
+    expect(result.status).toBe('SCHEDULED')
+  })
+
+  it('deve bloquear atendimento sobreposto a um anterior SEM fim (dentro da janela padrão)', async () => {
+    const { appointmentsRepo, patientsRepo, usersRepo, patientId, vetId } = await setupRepos()
+    const sut = new CreateAppointmentUseCase(appointmentsRepo, patientsRepo, usersRepo)
+    await sut.execute({ patientId, vetId, clinicId: CLINIC_ID, dateTime: new Date('2099-03-01T09:00:00'), category: 'OBSERVATION' })
+    await expect(sut.execute({ patientId, vetId, clinicId: CLINIC_ID, dateTime: new Date('2099-03-01T09:05:00'), category: 'OBSERVATION' }))
+      .rejects.toMatchObject({ statusCode: 409 })
+  })
+
   it('deve permitir agendar no mesmo slot após cancelamento', async () => {
     const { appointmentsRepo, patientsRepo, usersRepo, patientId, vetId } = await setupRepos()
     const sut = new CreateAppointmentUseCase(appointmentsRepo, patientsRepo, usersRepo)

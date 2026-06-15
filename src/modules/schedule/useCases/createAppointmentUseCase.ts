@@ -1,5 +1,6 @@
 import { Errors } from '../../../core/errors'
 import type { IAppointmentsRepository, CreateAppointmentDTO } from '../repositories/IAppointmentsRepository'
+import { DEFAULT_APPOINTMENT_DURATION_MS } from '../repositories/IAppointmentsRepository'
 import type { IPatientsRepository } from '../../patient/repositories/IPatientsRepository'
 import type { IUsersRepository } from '../../auth/repositories/IUsersRepository'
 import type { Appointment } from '@prisma/client'
@@ -30,7 +31,7 @@ export class CreateAppointmentUseCase {
       throw Errors.badRequest('O horário de fim deve ser posterior ao horário de início.')
     }
 
-    const effectiveEnd = input.endDateTime ?? new Date(input.dateTime.getTime() + 15 * 60 * 1000)
+    const effectiveEnd = input.endDateTime ?? new Date(input.dateTime.getTime() + DEFAULT_APPOINTMENT_DURATION_MS)
     const conflict = await this.appointmentsRepository.findConflict(input.vetId, input.dateTime, effectiveEnd)
     if (conflict) throw Errors.conflict('Este horário já está ocupado.')
 
