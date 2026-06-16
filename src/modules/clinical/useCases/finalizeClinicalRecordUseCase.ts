@@ -36,7 +36,13 @@ export class FinalizeClinicalRecordUseCase {
     const updatedRecord = await this.clinicalRecordsRepository.update(recordId, { finalized: true })
 
     if (updatedRecord.appointmentId) {
-      await this.appointmentsRepository.updateStatus(updatedRecord.appointmentId, 'COMPLETED', endDateTime)
+      // O fim baseado no horário de finalização só deve ser aplicado a atendimentos
+      // iniciados SEM agendamento prévio (sem horário de término). Agendamentos com
+      // horário marcado mantêm o fim original — caso contrário, finalizar fora do
+      // horário sobrescreveria o agendamento (ex.: 8h30–8h45 viraria 8h30–20h).
+      const appointment = await this.appointmentsRepository.findById(updatedRecord.appointmentId, clinicId)
+      const endDateTimeToApply = appointment?.endDateTime == null ? endDateTime : undefined
+      await this.appointmentsRepository.updateStatus(updatedRecord.appointmentId, 'COMPLETED', endDateTimeToApply)
     }
 
     if (!this.generateAISummaryUseCase) {

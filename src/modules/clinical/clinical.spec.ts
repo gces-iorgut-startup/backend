@@ -122,6 +122,37 @@ describe('Clinical Records Module', () => {
     expect(appt?.endDateTime?.toISOString()).toBe(endDateTime.toISOString())
   })
 
+  it('should keep the scheduled endDateTime when finalizing a booked appointment out of hours', async () => {
+    const vetId = randomUUID()
+    const scheduledEnd = new Date('2099-01-01T08:15:00.000Z')
+    const appointment = await appointmentsRepository.create({
+      patientId: 'patient-1',
+      vetId,
+      dateTime: new Date('2099-01-01T08:00:00.000Z'),
+      endDateTime: scheduledEnd, // agendamento com horário marcado (8h-8h15)
+      category: 'OBSERVATION',
+    })
+
+    const record = await startUseCase.execute({
+      appointmentId: appointment.id,
+      vetId,
+      clinicId: 'clinic-1',
+    })
+
+    // Finaliza muito depois do horário marcado (ex.: às 19h).
+    await finalizeUseCase.execute({
+      recordId: record.id,
+      vetId,
+      clinicId: 'clinic-1',
+      endDateTime: new Date('2099-01-01T19:00:00.000Z'),
+    })
+
+    const appt = await appointmentsRepository.findById(appointment.id, 'clinic-1')
+    expect(appt?.status).toBe('COMPLETED')
+    // O fim deve permanecer o horário agendado, não o horário de finalização.
+    expect(appt?.endDateTime?.toISOString()).toBe(scheduledEnd.toISOString())
+  })
+
   it('should not allow editing a finalized record', async () => {
     const vetId = randomUUID()
     const appointment = await appointmentsRepository.create({
