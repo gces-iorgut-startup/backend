@@ -47,6 +47,9 @@ export class GetTutorPatientHistoryUseCase {
         weightKg: true,
         finalized: true,
         vet: { select: { name: true } },
+        // US16 — tipo e data do atendimento vem do agendamento que originou o
+        // prontuário. Nulo quando o prontuário foi aberto fora da agenda.
+        appointment: { select: { category: true, dateTime: true } },
       },
     })
 

@@ -91,6 +91,69 @@ describe('Portal do Tutor routes', () => {
       expect(response.statusCode).toBe(HTTP.OK)
     })
 
+    it('seleciona categoria e data do agendamento que originou o prontuário', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(tutorUserWithPatients() as never)
+      prismaMock.patient.findUnique.mockResolvedValue(Factory.patient() as never)
+      prismaMock.clinicalRecord.findMany.mockResolvedValue([
+        {
+          ...Factory.clinicalRecord({ finalized: true }),
+          vet: { name: 'Dra. Camila' },
+          appointment: { category: 'VACCINATION', dateTime: new Date('2026-03-10T14:00:00.000Z') },
+        },
+      ] as never)
+      prismaMock.vaccination.findMany.mockResolvedValue([] as never)
+      prismaMock.examFile.findMany.mockResolvedValue([] as never)
+
+      const response = await app.injectAuth(
+        {
+          method: 'GET',
+          url: `/portal/patients/${SEED.PATIENT_ID}/history`,
+        },
+        { role: ROLE.TUTOR, userId: SEED.TUTOR_USER_ID },
+      )
+
+      expect(response.statusCode).toBe(HTTP.OK)
+
+      // O mock devolve o que for stubado, então a garantia real de que o tipo
+      // de atendimento chega ao tutor está no select pedido ao Prisma.
+      expect(prismaMock.clinicalRecord.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          select: expect.objectContaining({
+            appointment: { select: { category: true, dateTime: true } },
+          }),
+        }),
+      )
+
+      expect(response.json().clinicalRecords[0].appointment).toMatchObject({
+        category: 'VACCINATION',
+      })
+    })
+
+    it('devolve appointment nulo em prontuário aberto fora da agenda', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(tutorUserWithPatients() as never)
+      prismaMock.patient.findUnique.mockResolvedValue(Factory.patient() as never)
+      prismaMock.clinicalRecord.findMany.mockResolvedValue([
+        {
+          ...Factory.clinicalRecord({ appointmentId: null, finalized: true }),
+          vet: { name: 'Dra. Camila' },
+          appointment: null,
+        },
+      ] as never)
+      prismaMock.vaccination.findMany.mockResolvedValue([] as never)
+      prismaMock.examFile.findMany.mockResolvedValue([] as never)
+
+      const response = await app.injectAuth(
+        {
+          method: 'GET',
+          url: `/portal/patients/${SEED.PATIENT_ID}/history`,
+        },
+        { role: ROLE.TUTOR, userId: SEED.TUTOR_USER_ID },
+      )
+
+      expect(response.statusCode).toBe(HTTP.OK)
+      expect(response.json().clinicalRecords[0].appointment).toBeNull()
+    })
+
     it('rejeita pet que não pertence ao tutor com 403', async () => {
       prismaMock.user.findUnique.mockResolvedValue({
         ...Factory.tutorUser(),
