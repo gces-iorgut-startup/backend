@@ -18,4 +18,16 @@ export class PrismaPasswordTokensRepository implements IPasswordTokensRepository
       data: { usedAt: new Date() }
     })
   }
+
+  async invalidatePreviousTokens(userId: string): Promise<void> {
+    await prisma.passwordToken.updateMany({
+      where: {
+        userId,
+        usedAt: null,
+      },
+      data: {
+        usedAt: new Date(),
+      },
+    })
+  }
 }
