@@ -41,7 +41,7 @@ export class SendFirstAccessInviteUseCase {
     const secret = env.PASSWORD_RESET_SECRET || env.JWT_SECRET
 
     // 1. Invalidação prévia de tokens pendentes do mesmo tutor
-    await this.passwordTokensRepository.invalidatePreviousTokens(user.id)
+    await this.passwordTokensRepository.invalidatePreviousTokens(user.id, 'FIRST_ACCESS')
 
     // 2. Geração do token JWT com payload específico de primeiro acesso e jti único
     const token = jwt.sign(
@@ -57,7 +57,7 @@ export class SendFirstAccessInviteUseCase {
     const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000)
 
     // 3. Persistência do novo token
-    await this.passwordTokensRepository.create(user.id, token, expiresAt)
+    await this.passwordTokensRepository.create(user.id, token, expiresAt, 'FIRST_ACCESS')
 
     // 4. Construção da URL de Primeiro Acesso
     const baseUrl = env.FRONTEND_URL.replace(/\/$/, '')

@@ -64,6 +64,7 @@ describe('SendFirstAccessInviteUseCase', () => {
     const storedToken = passwordTokensRepository.items[0]
     expect(storedToken.token).toBe(result.token)
     expect(storedToken.userId).toBe(user.id)
+    expect(storedToken.type).toBe('FIRST_ACCESS')
     expect(storedToken.usedAt).toBeNull()
 
     // Verifica claims do JWT
