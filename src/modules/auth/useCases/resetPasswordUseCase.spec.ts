@@ -3,30 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { InMemoryUsersRepository } from '../repositories/in-memory/InMemoryUsersRepository'
 import { InMemoryRefreshTokensRepository } from '../repositories/in-memory/InMemoryRefreshTokensRepository'
 import type { IHashProvider } from '../providers/IHashProvider'
-import type { IPasswordTokensRepository, PasswordToken } from '../repositories/IPasswordTokensRepository'
-
-class InMemoryPasswordTokensRepository implements IPasswordTokensRepository {
-  public items: PasswordToken[] = []
-
-  async create(userId: string, token: string, expiresAt: Date): Promise<void> {
-    this.items.push({
-      id: `token-${this.items.length + 1}`,
-      userId,
-      token,
-      expiresAt,
-      usedAt: null,
-    })
-  }
-
-  async findByToken(token: string): Promise<PasswordToken | null> {
-    return this.items.find(item => item.token === token) ?? null
-  }
-
-  async markAsUsed(token: string): Promise<void> {
-    const item = this.items.find(passwordToken => passwordToken.token === token)
-    if (item) item.usedAt = new Date()
-  }
-}
+import { InMemoryPasswordTokensRepository } from '../repositories/in-memory/InMemoryPasswordTokensRepository'
 
 class FakeHashProvider implements IHashProvider {
   async hash(plain: string) { return `hashed:${plain}` }
