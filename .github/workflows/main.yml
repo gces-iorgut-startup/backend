@@ -45,6 +45,9 @@ jobs:
       - name: Instalar dependências
         run: npm ci
 
+      - name: Verificar vulnerabilidades das dependências
+        run: npm audit --audit-level=low
+
       - name: Gerar Prisma Client
         run: npx prisma generate
 
