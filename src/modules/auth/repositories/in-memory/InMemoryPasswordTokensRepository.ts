@@ -1,13 +1,18 @@
-import type { IPasswordTokensRepository, PasswordToken } from '../IPasswordTokensRepository'
+import type {
+  IPasswordTokensRepository,
+  PasswordToken,
+  PasswordTokenType,
+} from '../IPasswordTokensRepository'
 
 export class InMemoryPasswordTokensRepository implements IPasswordTokensRepository {
   public items: PasswordToken[] = []
 
-  async create(userId: string, token: string, expiresAt: Date): Promise<void> {
+  async create(userId: string, token: string, expiresAt: Date, type: PasswordTokenType): Promise<void> {
     this.items.push({
       id: `token-${this.items.length + 1}`,
       userId,
       token,
+      type,
       expiresAt,
       usedAt: null,
     })
@@ -17,14 +22,16 @@ export class InMemoryPasswordTokensRepository implements IPasswordTokensReposito
     return this.items.find(item => item.token === token) ?? null
   }
 
-  async markAsUsed(token: string): Promise<void> {
-    const item = this.items.find(passwordToken => passwordToken.token === token)
-    if (item) item.usedAt = new Date()
+  async markAsUsed(token: string): Promise<boolean> {
+    const item = this.items.find(passwordToken => passwordToken.token === token && !passwordToken.usedAt)
+    if (!item) return false
+    item.usedAt = new Date()
+    return true
   }
 
-  async invalidatePreviousTokens(userId: string): Promise<void> {
+  async invalidatePreviousTokens(userId: string, type?: PasswordTokenType): Promise<void> {
     this.items.forEach(item => {
-      if (item.userId === userId && !item.usedAt) {
+      if (item.userId === userId && !item.usedAt && (!type || item.type === type)) {
         item.usedAt = new Date()
       }
     })
