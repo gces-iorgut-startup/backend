@@ -3,7 +3,7 @@ import '@fastify/rate-limit'
 import { registerOwnerController, registerOwnerBodySchema } from './controllers/registerOwnerController'
 import { registerVetController, registerVetBodySchema } from './controllers/registerVetController'
 import { authenticateController, authenticateBodySchema } from './controllers/authenticateController'
-import { refreshTokenController, refreshTokenBodySchema } from './controllers/refreshTokenController'
+import { refreshTokenController } from './controllers/refreshTokenController'
 import { logoutController } from './controllers/logoutController'
 import { googleAuthController, googleAuthBodySchema } from './controllers/googleAuthController'
 import { getMeController, updateMeController, updateUserBodySchema } from './controllers/meController'
@@ -47,7 +47,6 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
     schema: {
       tags: ['Auth'],
       summary: 'Renovar o token de acesso (Refresh Token)',
-      body: refreshTokenBodySchema,
     },
   }, refreshTokenController)
 

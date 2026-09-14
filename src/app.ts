@@ -2,6 +2,7 @@ import fastify from 'fastify'
 import fastifyCors from '@fastify/cors'
 import fastifyJwt from '@fastify/jwt'
 import fastifyCookie from '@fastify/cookie'
+import fastifyCsrfProtection from '@fastify/csrf-protection'
 import fastifyMultipart from '@fastify/multipart'
 import fastifyStatic from '@fastify/static'
 import path from 'path'
@@ -65,10 +66,10 @@ app.register(fastifySwaggerUi, {
 const corsOrigins = env.CORS_ORIGIN.split(',')
   .map((origin) => origin.trim())
   .filter(Boolean)
-const allowAllOrigins = corsOrigins.includes('*')
+
 app.register(fastifyCors, {
-  origin: allowAllOrigins ? '*' : corsOrigins,
-  credentials: !allowAllOrigins,
+  origin: corsOrigins.includes('*') ? true : corsOrigins, // true reflete a origem real
+  credentials: true,
 })
 
 app.register(fastifyJwt, {
@@ -77,7 +78,10 @@ app.register(fastifyJwt, {
   cookie: { cookieName: 'refreshToken', signed: false },
 })
 
-app.register(fastifyCookie)
+app.register(fastifyCookie, { secret: env.JWT_SECRET })
+app.register(fastifyCsrfProtection, {
+  cookieOpts: { signed: true },
+})
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -96,6 +100,27 @@ app.register(fastifyStatic, {
 
 app.register(rateLimit, {
   global: false, 
+})
+
+app.addHook('onRequest', async (request, reply) => {
+  const method = request.method.toUpperCase()
+  
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    const url = request.routeOptions.url
+    const publicRoutes = [
+      '/auth/login',
+      '/auth/register',
+      '/auth/refresh',
+      '/auth/password/forgot',
+      '/auth/password/reset',
+      '/auth/set-password',
+      '/auth/google'
+    ]
+
+    if (!publicRoutes.includes(url) && env.NODE_ENV !== 'test') {
+      await request.csrfCheck()
+    }
+  }
 })
 
 // ── Health Check ─────────────────────────────────────

@@ -85,8 +85,14 @@ describe('Auth routes', () => {
 
       expect(response.statusCode).toBe(HTTP.OK)
       const body = response.json()
-      expect(body.accessToken).toEqual(expect.any(String))
-      expect(body.refreshToken).toEqual(expect.any(String))
+      
+      const cookies = response.cookies
+      expect(cookies.some((c: any) => c.name === 'accessToken')).toBe(true)
+      expect(cookies.some((c: any) => c.name === 'refreshToken')).toBe(true)
+      expect(cookies.some((c: any) => c.name === 'XSRF-TOKEN')).toBe(true)
+      
+      expect(body.accessToken).toBeUndefined()
+      expect(body.refreshToken).toBeUndefined()
       expect(body.user.email).toBe(FAKE.EMAIL)
     })
 
@@ -191,10 +197,15 @@ describe('Auth routes', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/auth/refresh',
-        payload: { refreshToken: FAKE.REFRESH_TOKEN },
+        cookies: { refreshToken: FAKE.REFRESH_TOKEN },
       })
       expect(response.statusCode).toBe(HTTP.OK)
-      expect(response.json().accessToken).toEqual(expect.any(String))
+      
+      const cookies = response.cookies
+      expect(cookies.some((c: any) => c.name === 'accessToken')).toBe(true)
+      expect(cookies.some((c: any) => c.name === 'refreshToken')).toBe(true)
+      expect(cookies.some((c: any) => c.name === 'XSRF-TOKEN')).toBe(true)
+      expect(response.json().accessToken).toBeUndefined()
     })
 
     it('rejeita refresh token desconhecido com 401', async () => {
@@ -202,7 +213,7 @@ describe('Auth routes', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/auth/refresh',
-        payload: { refreshToken: 'invalido' },
+        cookies: { refreshToken: 'invalido' },
       })
       expect(response.statusCode).toBe(HTTP.UNAUTHORIZED)
     })

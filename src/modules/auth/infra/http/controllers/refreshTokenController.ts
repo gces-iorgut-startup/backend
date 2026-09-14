@@ -3,10 +3,13 @@ import { z } from 'zod'
 import { makeRefreshTokenUseCase } from '../../../useCases/factories/makeRefreshTokenUseCase'
 import type { Role } from '@prisma/client'
 
-export const refreshTokenBodySchema = z.object({ refreshToken: z.string() })
-
 export async function refreshTokenController(request: FastifyRequest, reply: FastifyReply) {
-  const { refreshToken } = refreshTokenBodySchema.parse(request.body)
+  const refreshToken = request.cookies.refreshToken
+
+  if (!refreshToken) {
+    return reply.status(401).send({ message: 'Refresh token não fornecido.' })
+  }
+
   const useCase = makeRefreshTokenUseCase()
   const result = await useCase.execute({ refreshToken })
 
@@ -16,5 +19,28 @@ export async function refreshTokenController(request: FastifyRequest, reply: Fas
     clinicId: result.user.clinicId,
   })
 
-  return reply.status(200).send({ user: result.user, accessToken, refreshToken: result.refreshToken })
+  const csrfToken = await reply.generateCsrf()
+
+  const cookieOptions = {
+    path: '/',
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax' as const,
+  }
+
+  reply.setCookie('accessToken', accessToken, {
+    ...cookieOptions,
+    httpOnly: true,
+  })
+
+  reply.setCookie('refreshToken', result.refreshToken, {
+    ...cookieOptions,
+    httpOnly: true,
+  })
+
+  reply.setCookie('XSRF-TOKEN', csrfToken, {
+    ...cookieOptions,
+    httpOnly: false,
+  })
+
+  return reply.status(200).send({ user: result.user })
 }

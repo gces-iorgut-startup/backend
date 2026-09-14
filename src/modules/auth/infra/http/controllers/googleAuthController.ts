@@ -19,10 +19,31 @@ export async function googleAuthController(request: FastifyRequest, reply: Fasti
     clinicId: result.user.clinicId,
   })
 
+  const csrfToken = await reply.generateCsrf()
+
+  const cookieOptions = {
+    path: '/',
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax' as const,
+  }
+
+  reply.setCookie('accessToken', jwtToken, {
+    ...cookieOptions,
+    httpOnly: true,
+  })
+
+  reply.setCookie('refreshToken', result.refreshToken, {
+    ...cookieOptions,
+    httpOnly: true,
+  })
+
+  reply.setCookie('XSRF-TOKEN', csrfToken, {
+    ...cookieOptions,
+    httpOnly: false,
+  })
+
   return reply.status(200).send({
     user: result.user,
-    accessToken: jwtToken,
-    refreshToken: result.refreshToken,
     isNewUser: result.isNewUser,
   })
 }
