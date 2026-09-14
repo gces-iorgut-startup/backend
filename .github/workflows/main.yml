@@ -43,7 +43,7 @@ jobs:
           cache: 'npm'
 
       - name: Instalar dependências
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Gerar Prisma Client
         run: npx prisma generate
@@ -94,6 +94,6 @@ jobs:
         with:
           context: .
           push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/iougurt-api:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME || 'iougurt' }}/iougurt-api:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max

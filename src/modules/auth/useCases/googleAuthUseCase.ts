@@ -40,7 +40,7 @@ export class GoogleAuthUseCase {
       throw new AppError('Token do Google inválido ou expirado.', 401)
     }
 
-    const googleUser: GoogleUserInfo = await res.json()
+    const googleUser = (await res.json()) as GoogleUserInfo
 
     if (!googleUser.email || !googleUser.email_verified) {
       throw new AppError('Conta Google sem e-mail verificado.', 400)
