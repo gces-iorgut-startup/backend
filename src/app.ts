@@ -90,7 +90,7 @@ app.register(fastifyStatic, {
   root: path.join(__dirname, '..', 'uploads'),
   prefix: '/uploads/',
   setHeaders(res) {
-    res.setHeader('Content-Disposition', 'attachment')
+    res.header('Content-Disposition', 'attachment')
   },
 })
 
