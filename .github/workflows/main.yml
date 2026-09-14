@@ -43,7 +43,7 @@ jobs:
           cache: 'npm'
 
       - name: Instalar dependências
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Gerar Prisma Client
         run: npx prisma generate
