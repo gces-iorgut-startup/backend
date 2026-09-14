@@ -170,4 +170,62 @@ describe('Tutor routes', () => {
       expect(data).not.toHaveProperty('temporaryPassword')
     })
   })
+
+  describe('POST /tutors/:id/resend-invite', () => {
+    it('reenvia o convite de primeiro acesso com 200 OK para tutor pendente', async () => {
+      prismaMock.tutor.findUnique.mockResolvedValue({
+        id: SEED.TUTOR_ID,
+        fullName: 'Maria Tutor',
+        clinicId: SEED.CLINIC_ID,
+        userId: SEED.TUTOR_USER_ID,
+        email: 'maria.tutor@iougurt.com',
+        clinic: { id: SEED.CLINIC_ID, name: 'Clínica Iougurt' },
+      } as never)
+
+      prismaMock.passwordToken.findFirst.mockResolvedValue(null)
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: SEED.TUTOR_USER_ID,
+        email: 'maria.tutor@iougurt.com',
+        name: 'Maria Tutor',
+      } as never)
+
+      prismaMock.passwordToken.updateMany.mockResolvedValue({ count: 0 } as never)
+      prismaMock.passwordToken.create.mockResolvedValue({
+        id: 'token-2',
+        token: 'fake-jwt-2',
+        userId: SEED.TUTOR_USER_ID,
+      } as never)
+
+      const response = await app.injectAuth({
+        method: 'POST',
+        url: '/tutors/' + SEED.TUTOR_ID + '/resend-invite',
+      })
+
+      expect(response.statusCode).toBe(HTTP.OK)
+      expect(response.json()).toEqual({ message: 'Convite reenviado com sucesso.' })
+    })
+
+    it('rejeita reenvio se o tutor já tiver ativado a conta com 400 BAD_REQUEST', async () => {
+      prismaMock.tutor.findUnique.mockResolvedValue({
+        id: SEED.TUTOR_ID,
+        fullName: 'Maria Tutor',
+        clinicId: SEED.CLINIC_ID,
+        userId: SEED.TUTOR_USER_ID,
+        email: 'maria.tutor@iougurt.com',
+      } as never)
+
+      prismaMock.passwordToken.findFirst.mockResolvedValue({
+        id: 'token-usado',
+        usedAt: new Date(),
+      } as never)
+
+      const response = await app.injectAuth({
+        method: 'POST',
+        url: '/tutors/' + SEED.TUTOR_ID + '/resend-invite',
+      })
+
+      expect(response.statusCode).toBe(HTTP.BAD_REQUEST)
+      expect(response.json().error).toBe('O tutor já definiu sua senha e ativou a conta.')
+    })
+  })
 })
