@@ -105,9 +105,12 @@ describe('SendForgotPasswordMailUseCase', () => {
     const recoveryTokens = passwordTokensRepository.items.filter(item => item.type === 'RECOVERY')
     expect(recoveryTokens).toHaveLength(2)
     expect(recoveryTokens[0].token).not.toBe(recoveryTokens[1].token)
-    expect(recoveryTokens[0].usedAt).toBeInstanceOf(Date)
-    expect(recoveryTokens[1].usedAt).toBeNull()
-    expect((await passwordTokensRepository.findByToken('convite-pendente'))?.usedAt).toBeNull()
+    expect(recoveryTokens[0].usedAt).toBeNull()
+    expect(recoveryTokens[0].expiresAt.getTime()).toBeLessThanOrEqual(Date.now())
+    expect(recoveryTokens[1].expiresAt.getTime()).toBeGreaterThan(Date.now())
+    const invite = await passwordTokensRepository.findByToken('convite-pendente')
+    expect(invite?.usedAt).toBeNull()
+    expect(invite!.expiresAt.getTime()).toBeGreaterThan(Date.now())
   })
 
   it('nao deve criar token nem enviar email para usuario inexistente', async () => {

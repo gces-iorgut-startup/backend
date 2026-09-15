@@ -40,11 +40,11 @@ export class ResendInviteUseCase {
       throw Errors.badRequest('Este tutor ainda não possui uma conta de acesso criada.')
     }
 
-    // Valida se o tutor já ativou a conta / definiu senha
+    // Valida se o tutor já ativou a conta / definiu senha: `usedAt` só é preenchido quando um
+    // token é consumido (convite ou recuperação); tokens invalidados por reenvio apenas expiram
     const activatedToken = await prisma.passwordToken.findFirst({
       where: {
         userId: tutor.userId,
-        type: 'FIRST_ACCESS',
         usedAt: { not: null },
       },
     })

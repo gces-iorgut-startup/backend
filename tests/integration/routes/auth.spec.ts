@@ -233,9 +233,18 @@ describe('Auth routes', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/auth/password/reset',
-        payload: { token: 'token-invalido', newPassword: 'senha-nova-123' },
+        payload: { token: 'token-invalido', newPassword: 'SenhaNova@123' },
       })
       expect([HTTP.UNAUTHORIZED, HTTP.BAD_REQUEST]).toContain(response.statusCode)
+    })
+
+    it('rejeita senha que não atende aos requisitos mínimos', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/auth/password/reset',
+        payload: { token: 'qualquer-token', newPassword: 'senha-nova-123' },
+      })
+      expect(response.statusCode).toBe(HTTP.UNPROCESSABLE)
     })
   })
 })

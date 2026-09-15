@@ -23,16 +23,19 @@ export class InMemoryPasswordTokensRepository implements IPasswordTokensReposito
   }
 
   async markAsUsed(token: string): Promise<boolean> {
-    const item = this.items.find(passwordToken => passwordToken.token === token && !passwordToken.usedAt)
+    const now = new Date()
+    const item = this.items.find(passwordToken =>
+      passwordToken.token === token && !passwordToken.usedAt && passwordToken.expiresAt > now,
+    )
     if (!item) return false
-    item.usedAt = new Date()
+    item.usedAt = now
     return true
   }
 
   async invalidatePreviousTokens(userId: string, type?: PasswordTokenType): Promise<void> {
     this.items.forEach(item => {
       if (item.userId === userId && !item.usedAt && (!type || item.type === type)) {
-        item.usedAt = new Date()
+        item.expiresAt = new Date()
       }
     })
   }

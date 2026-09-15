@@ -18,13 +18,14 @@ export class PrismaPasswordTokensRepository implements IPasswordTokensRepository
 
   async markAsUsed(token: string): Promise<boolean> {
     const { count } = await prisma.passwordToken.updateMany({
-      where: { token, usedAt: null },
+      where: { token, usedAt: null, expiresAt: { gt: new Date() } },
       data: { usedAt: new Date() },
     })
     return count > 0
   }
 
   async invalidatePreviousTokens(userId: string, type?: PasswordTokenType): Promise<void> {
+    // Invalida expirando o token: `usedAt` fica reservado para tokens efetivamente consumidos
     await prisma.passwordToken.updateMany({
       where: {
         userId,
@@ -32,7 +33,7 @@ export class PrismaPasswordTokensRepository implements IPasswordTokensRepository
         usedAt: null,
       },
       data: {
-        usedAt: new Date(),
+        expiresAt: new Date(),
       },
     })
   }

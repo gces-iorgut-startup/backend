@@ -45,6 +45,9 @@ describe('ResendInviteUseCase', () => {
     })
 
     expect(result).toEqual({ message: 'Convite reenviado com sucesso.' })
+    expect(prisma.passwordToken.findFirst).toHaveBeenCalledWith({
+      where: { userId: 'user-tutor-1', usedAt: { not: null } },
+    })
     expect(sendInviteMock.execute).toHaveBeenCalledWith({
       userId: 'user-tutor-1',
       clinicName: 'Clínica Iougurt',

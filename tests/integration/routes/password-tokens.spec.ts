@@ -109,7 +109,7 @@ describe('Password token routes', () => {
       expect(response.statusCode).toBe(HTTP.NO_CONTENT)
 
       expect(prismaMock.passwordToken.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { token, usedAt: null } }),
+        expect.objectContaining({ where: { token, usedAt: null, expiresAt: { gt: expect.any(Date) } } }),
       )
 
       const [[updateArgs]] = prismaMock.user.update.mock.calls as [[{ where: { id: string }, data: { passwordHash: string } }]]
