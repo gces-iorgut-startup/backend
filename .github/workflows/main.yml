@@ -51,6 +51,9 @@ jobs:
       - name: Gerar Prisma Client
         run: npx prisma generate
 
+      - name: Rodar Linter
+        run: npm run lint
+
       - name: Rodar Typecheck
         run: npm run typecheck
 
