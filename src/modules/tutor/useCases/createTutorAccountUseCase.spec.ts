@@ -16,6 +16,8 @@ vi.mock('../../../config/prisma', () => ({
   },
 }))
 
+const AUTH = { userClinicId: 'clinic-1', userRole: 'VET' }
+
 describe('CreateTutorAccountUseCase', () => {
   let sendInviteMock: SendFirstAccessInviteUseCase
 
@@ -54,7 +56,7 @@ describe('CreateTutorAccountUseCase', () => {
     } as never)
 
     const sut = new CreateTutorAccountUseCase(sendInviteMock)
-    const result = await sut.execute({ tutorId, email })
+    const result = await sut.execute({ tutorId, email: '  Tutor.Maria@Exemplo.com ', ...AUTH })
 
     expect(result).toEqual({
       userId: 'user-1',
@@ -62,6 +64,11 @@ describe('CreateTutorAccountUseCase', () => {
     })
     expect(result).not.toHaveProperty('temporaryPassword')
 
+    // E-mail normalizado, para casar com a busca do login e do "Esqueci minha senha"
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { email } })
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ email }),
+    })
     expect(prisma.tutor.update).toHaveBeenCalledWith({
       where: { id: tutorId },
       data: { email },
@@ -75,10 +82,21 @@ describe('CreateTutorAccountUseCase', () => {
 
   it('deve rejeitar se o e-mail não for informado', async () => {
     const sut = new CreateTutorAccountUseCase(sendInviteMock)
-    await expect(sut.execute({ tutorId: 'tutor-1', email: '' })).rejects.toMatchObject({
+    await expect(sut.execute({ tutorId: 'tutor-1', email: '', ...AUTH })).rejects.toMatchObject({
       statusCode: 400,
       message: 'E-mail é obrigatório para criar a conta de acesso.',
     })
+  })
+
+  it('deve rejeitar se o papel do usuário não for VET ou OWNER', async () => {
+    const sut = new CreateTutorAccountUseCase(sendInviteMock)
+    await expect(
+      sut.execute({ tutorId: 'tutor-1', email: 'tutor@exemplo.com', userClinicId: 'clinic-1', userRole: 'TUTOR' }),
+    ).rejects.toMatchObject({
+      statusCode: 403,
+      message: 'Apenas veterinários ou donos da clínica podem criar contas de acesso de tutores.',
+    })
+    expect(prisma.tutor.findUnique).not.toHaveBeenCalled()
   })
 
   it('deve lançar erro 404 se tutor não for encontrado', async () => {
@@ -86,22 +104,41 @@ describe('CreateTutorAccountUseCase', () => {
 
     const sut = new CreateTutorAccountUseCase(sendInviteMock)
     await expect(
-      sut.execute({ tutorId: 'tutor-inexistente', email: 'tutor@exemplo.com' }),
+      sut.execute({ tutorId: 'tutor-inexistente', email: 'tutor@exemplo.com', ...AUTH }),
     ).rejects.toMatchObject({
       statusCode: 404,
       message: 'Tutor não encontrado.',
     })
   })
 
-  it('deve lançar erro 400 se o tutor já possuir conta', async () => {
+  it('deve lançar erro 403 se o tutor for de outra clínica', async () => {
     vi.mocked(prisma.tutor.findUnique).mockResolvedValue({
       id: 'tutor-1',
-      userId: 'user-existente',
+      userId: null,
+      clinicId: 'outra-clinica',
     } as never)
 
     const sut = new CreateTutorAccountUseCase(sendInviteMock)
     await expect(
-      sut.execute({ tutorId: 'tutor-1', email: 'tutor@exemplo.com' }),
+      sut.execute({ tutorId: 'tutor-1', email: 'tutor@exemplo.com', ...AUTH }),
+    ).rejects.toMatchObject({
+      statusCode: 403,
+      message: 'Acesso negado: Tutor pertence a outra clínica.',
+    })
+    expect(prisma.user.create).not.toHaveBeenCalled()
+    expect(sendInviteMock.execute).not.toHaveBeenCalled()
+  })
+
+  it('deve lançar erro 400 se o tutor já possuir conta', async () => {
+    vi.mocked(prisma.tutor.findUnique).mockResolvedValue({
+      id: 'tutor-1',
+      userId: 'user-existente',
+      clinicId: 'clinic-1',
+    } as never)
+
+    const sut = new CreateTutorAccountUseCase(sendInviteMock)
+    await expect(
+      sut.execute({ tutorId: 'tutor-1', email: 'tutor@exemplo.com', ...AUTH }),
     ).rejects.toMatchObject({
       statusCode: 400,
       message: 'Este tutor já possui uma conta de acesso ao portal.',
@@ -112,12 +149,13 @@ describe('CreateTutorAccountUseCase', () => {
     vi.mocked(prisma.tutor.findUnique).mockResolvedValue({
       id: 'tutor-1',
       userId: null,
+      clinicId: 'clinic-1',
     } as never)
     vi.mocked(prisma.user.findUnique).mockResolvedValue({ id: 'outro-user' } as never)
 
     const sut = new CreateTutorAccountUseCase(sendInviteMock)
     await expect(
-      sut.execute({ tutorId: 'tutor-1', email: 'existente@exemplo.com' }),
+      sut.execute({ tutorId: 'tutor-1', email: 'existente@exemplo.com', ...AUTH }),
     ).rejects.toMatchObject({
       statusCode: 400,
       message: 'Este e-mail já está em uso.',

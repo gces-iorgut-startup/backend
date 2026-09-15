@@ -12,8 +12,11 @@ export interface PasswordToken {
 export interface IPasswordTokensRepository {
   create(userId: string, token: string, expiresAt: Date, type: PasswordTokenType): Promise<void>
   findByToken(token: string): Promise<PasswordToken | null>
-  /** Marca o token como usado apenas se ainda estiver pendente; retorna false se já havia sido consumido. */
+  /** Marca o token como usado apenas se ainda estiver pendente e no prazo; retorna false caso contrário. */
   markAsUsed(token: string): Promise<boolean>
-  /** Sem `type`, invalida os tokens pendentes de todos os tipos. */
+  /**
+   * Expira os tokens pendentes sem preencher `usedAt`, que indica apenas consumo real.
+   * Sem `type`, invalida os tokens pendentes de todos os tipos.
+   */
   invalidatePreviousTokens(userId: string, type?: PasswordTokenType): Promise<void>
 }

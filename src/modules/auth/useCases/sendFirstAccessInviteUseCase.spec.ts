@@ -101,13 +101,15 @@ describe('SendFirstAccessInviteUseCase', () => {
     const secondResult = await sut.execute({ userId: user.id })
     expect(passwordTokensRepository.items).toHaveLength(2)
 
-    // O 1º token agora deve estar invalidado (usedAt preenchido)
+    // O 1º token agora deve estar invalidado (expirado), sem ser marcado como usado
     const firstTokenInDb = await passwordTokensRepository.findByToken(firstResult.token)
-    expect(firstTokenInDb?.usedAt).toBeInstanceOf(Date)
+    expect(firstTokenInDb?.usedAt).toBeNull()
+    expect(firstTokenInDb!.expiresAt.getTime()).toBeLessThanOrEqual(Date.now())
 
-    // O 2º token deve estar ativo (usedAt nulo)
+    // O 2º token deve estar ativo
     const secondTokenInDb = await passwordTokensRepository.findByToken(secondResult.token)
     expect(secondTokenInDb?.usedAt).toBeNull()
+    expect(secondTokenInDb!.expiresAt.getTime()).toBeGreaterThan(Date.now())
   })
 
   it('não deve invalidar tokens de outros usuários', async () => {

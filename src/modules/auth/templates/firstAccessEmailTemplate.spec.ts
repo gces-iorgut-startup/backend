@@ -25,4 +25,17 @@ describe('renderFirstAccessEmail', () => {
     expect(html).toContain('Olá, João Santos!')
     expect(html).toContain('sua clínica veterinária')
   })
+
+  it('deve escapar HTML nos dados interpolados', () => {
+    const html = renderFirstAccessEmail({
+      tutorName: '<script>alert(1)</script>',
+      firstAccessUrl: 'http://localhost:5173/primeiro-acesso?token=abc&x="y"',
+      clinicName: 'Clínica <a href="http://malicioso.com">Clique</a>',
+    })
+
+    expect(html).not.toContain('<script>')
+    expect(html).toContain('Olá, &lt;script&gt;alert(1)&lt;/script&gt;!')
+    expect(html).not.toContain('<a href="http://malicioso.com">')
+    expect(html).toContain('href="http://localhost:5173/primeiro-acesso?token=abc&amp;x=&quot;y&quot;"')
+  })
 })

@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { TestApp } from '../../utils/app-builder'
 import { Factory } from '../../utils/factories'
-import { FAKE, HTTP, SEED } from '../../utils/constants'
+import { FAKE, HTTP, ROLE, SEED } from '../../utils/constants'
 import { prismaMock } from '../../setup'
 
 const VALID_TUTOR_BODY = {
@@ -168,6 +168,36 @@ describe('Tutor routes', () => {
         email: 'maria.tutor@iougurt.com',
       })
       expect(data).not.toHaveProperty('temporaryPassword')
+    })
+
+    it('rejeita criação de conta por usuário TUTOR com 403', async () => {
+      const response = await app.injectAuth({
+        method: 'POST',
+        url: '/tutors/' + SEED.TUTOR_ID + '/account',
+        payload: { email: 'maria.tutor@iougurt.com' },
+      }, { role: ROLE.TUTOR })
+
+      expect(response.statusCode).toBe(HTTP.FORBIDDEN)
+      expect(prismaMock.user.create).not.toHaveBeenCalled()
+    })
+
+    it('rejeita criação de conta para tutor de outra clínica com 403', async () => {
+      prismaMock.tutor.findUnique.mockResolvedValue({
+        id: SEED.TUTOR_ID,
+        fullName: 'Maria Tutor',
+        clinicId: 'outra-clinica',
+        userId: null,
+        email: null,
+      } as never)
+
+      const response = await app.injectAuth({
+        method: 'POST',
+        url: '/tutors/' + SEED.TUTOR_ID + '/account',
+        payload: { email: 'maria.tutor@iougurt.com' },
+      }, { role: ROLE.VET })
+
+      expect(response.statusCode).toBe(HTTP.FORBIDDEN)
+      expect(prismaMock.user.create).not.toHaveBeenCalled()
     })
   })
 

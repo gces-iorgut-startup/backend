@@ -82,7 +82,20 @@ describe('SetPasswordUseCase', () => {
 
     await sut.execute({ token: invite, newPassword: NEW_PASSWORD })
 
-    expect((await passwordTokensRepository.findByToken(pendingRecovery))?.usedAt).toBeInstanceOf(Date)
+    const recovery = await passwordTokensRepository.findByToken(pendingRecovery)
+    expect(recovery?.usedAt).toBeNull()
+    expect(recovery!.expiresAt.getTime()).toBeLessThanOrEqual(Date.now())
+  })
+
+  it('deve rejeitar convite invalidado por um reenvio', async () => {
+    const tutor = await createTutor()
+    const oldInvite = await issueToken(tutor.id, 'FIRST_ACCESS')
+    await passwordTokensRepository.invalidatePreviousTokens(tutor.id, 'FIRST_ACCESS')
+
+    await expect(
+      sut.execute({ token: oldInvite, newPassword: NEW_PASSWORD }),
+    ).rejects.toMatchObject({ statusCode: 400 })
+    expect(usersRepository.items[0].passwordHash).toBe('hash-inicial')
   })
 
   it('deve aceitar token de recuperação de senha', async () => {

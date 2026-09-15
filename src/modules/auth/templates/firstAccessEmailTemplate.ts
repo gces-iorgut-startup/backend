@@ -4,11 +4,24 @@ export interface FirstAccessEmailTemplateData {
   clinicName?: string
 }
 
-export function renderFirstAccessEmail({
-  tutorName,
-  firstAccessUrl,
-  clinicName = 'sua clínica veterinária',
-}: FirstAccessEmailTemplateData): string {
+const HTML_ESCAPES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, char => HTML_ESCAPES[char])
+}
+
+export function renderFirstAccessEmail(data: FirstAccessEmailTemplateData): string {
+  // Nome do tutor e da clínica vêm de cadastro livre: escapados para evitar injeção de HTML no e-mail
+  const tutorName = escapeHtml(data.tutorName)
+  const firstAccessUrl = escapeHtml(data.firstAccessUrl)
+  const clinicName = escapeHtml(data.clinicName ?? 'sua clínica veterinária')
+
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>

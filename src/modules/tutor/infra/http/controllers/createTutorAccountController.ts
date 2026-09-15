@@ -19,9 +19,15 @@ export async function createTutorAccountController(
 ) {
   const { id: tutorId } = request.params
   const { email } = request.body
+  const { clinicId, role } = request.user
 
   const useCase = makeCreateTutorAccountUseCase(request.log)
-  const result = await useCase.execute({ tutorId, email })
+  const result = await useCase.execute({
+    tutorId,
+    email,
+    userClinicId: clinicId,
+    userRole: role,
+  })
 
   return reply.status(201).send(result)
 }

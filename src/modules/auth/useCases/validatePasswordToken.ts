@@ -29,7 +29,7 @@ export async function findValidPasswordToken(
     throw Errors.notFound('Token não encontrado.')
   }
 
-  if (storedToken.usedAt || storedToken.expiresAt < new Date()) {
+  if (storedToken.usedAt || storedToken.expiresAt <= new Date()) {
     throw Errors.badRequest('Token expirado ou já utilizado.')
   }
 
