@@ -1,5 +1,6 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { verifyJwt } from '@shared/middleware/verify-jwt'
+import { verifyRole } from '@shared/middleware/verify-role'
 import { createAppointmentController, createAppointmentBodySchema } from './controllers/createAppointmentController'
 import { listAppointmentsByDayController, listAppointmentsByDayQuerySchema } from './controllers/listAppointmentsByDayController'
 import { cancelAppointmentController, cancelAppointmentParamsSchema, cancelAppointmentBodySchema } from './controllers/cancelAppointmentController'
@@ -7,6 +8,7 @@ import { rescheduleAppointmentController, rescheduleAppointmentParamsSchema, res
 
 export const appointmentRoutes: FastifyPluginAsyncZod = async (app) => {
   app.addHook('preHandler', verifyJwt)
+  app.addHook('preHandler', verifyRole('OWNER', 'VET'))
 
   app.post('/', {
     schema: {

@@ -11,9 +11,15 @@ export async function generatePrescriptionController(
   reply: FastifyReply
 ) {
   const { id } = request.params
+  const { userId, role, clinicId } = request.user
 
   const useCase = makeGeneratePrescriptionUseCase()
-  const pdfBuffer = await useCase.execute({ recordId: id })
+  const pdfBuffer = await useCase.execute({
+    recordId: id,
+    userId,
+    role,
+    clinicId,
+  })
 
   return reply
     .header('Content-Type', 'application/pdf')

@@ -3,8 +3,13 @@ import { AppError } from '../../../shared/errors/app-error'
 import { prisma } from '../../../config/prisma'
 import { routineGuidanceToPlainText } from '../../../shared/clinical/routine-guidance-meta'
 
+import type { Role } from '@prisma/client'
+
 interface GeneratePrescriptionRequest {
   recordId: string
+  userId: string
+  role: Role
+  clinicId: string
 }
 
 // ── Design tokens alinhados ao site (frontend/src/styles/index.css) ──
@@ -113,7 +118,7 @@ function drawFooter(doc: PDFKit.PDFDocument, emittedAt: Date): number {
 }
 
 export class GeneratePrescriptionUseCase {
-  async execute({ recordId }: GeneratePrescriptionRequest): Promise<Buffer> {
+  async execute({ recordId, userId, role, clinicId }: GeneratePrescriptionRequest): Promise<Buffer> {
     const record = await prisma.clinicalRecord.findUnique({
       where: { id: recordId },
       include: {
@@ -127,8 +132,22 @@ export class GeneratePrescriptionUseCase {
       },
     })
 
-    if (!record) {
+    if (!record || record.patient.clinicId !== clinicId) {
       throw new AppError('Prontuário não encontrado.', 404)
+    }
+
+    if (role === 'VET' && record.vetId !== userId) {
+      throw new AppError('Apenas o veterinário responsável ou o proprietário pode emitir a receita.', 403)
+    }
+
+    if (role === 'TUTOR') {
+      if (!record.patient.tutor?.userId || record.patient.tutor.userId !== userId) {
+        throw new AppError('Você não tem permissão para acessar a receita deste animal.', 403)
+      }
+    }
+
+    if (role !== 'OWNER' && role !== 'VET' && role !== 'TUTOR') {
+      throw new AppError('Acesso não autorizado para este perfil.', 403)
     }
 
     if (!record.finalized) {
