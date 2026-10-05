@@ -6,11 +6,17 @@ import { GeneratePrescriptionUseCase } from '../generatePrescriptionUseCase'
 import { GenerateAISummaryUseCase } from '../generateAISummaryUseCase'
 import { PrismaClinicalRecordsRepository } from '../../infra/repositories/PrismaClinicalRecordsRepository'
 import { PrismaAppointmentsRepository } from '../../../schedule/infra/repositories/PrismaAppointmentsRepository'
+import { PrismaUsersRepository } from '../../../auth/infra/repositories/PrismaUsersRepository'
 
 export function makeStartClinicalRecordUseCase() {
   const appointmentsRepository = new PrismaAppointmentsRepository()
   const clinicalRecordsRepository = new PrismaClinicalRecordsRepository()
-  return new StartClinicalRecordUseCase(appointmentsRepository, clinicalRecordsRepository)
+  const usersRepository = new PrismaUsersRepository()
+  return new StartClinicalRecordUseCase(
+    appointmentsRepository,
+    clinicalRecordsRepository,
+    usersRepository
+  )
 }
 
 export function makeUpdateClinicalRecordUseCase() {
