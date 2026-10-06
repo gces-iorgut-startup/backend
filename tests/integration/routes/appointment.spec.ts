@@ -98,6 +98,38 @@ describe('Appointment routes', () => {
       })
       expect(response.statusCode).toBe(HTTP.UNPROCESSABLE)
     })
+
+    it('permite criação quando perfil é VET', async () => {
+      prismaMock.patient.findFirst.mockResolvedValue(Factory.patient() as never)
+      prismaMock.user.findUnique.mockResolvedValue(Factory.owner() as never)
+      prismaMock.appointment.create.mockResolvedValue(
+        Factory.appointment({ category: 'OBSERVATION' }) as never,
+      )
+
+      const response = await app.injectAuth(
+        {
+          method: 'POST',
+          url: '/appointments',
+          payload: validBody('OBSERVATION'),
+        },
+        { role: ROLE.VET, userId: SEED.VET_ID },
+      )
+
+      expect(response.statusCode).toBe(HTTP.CREATED)
+    })
+
+    it('rejeita com 403 quando perfil é TUTOR', async () => {
+      const response = await app.injectAuth(
+        {
+          method: 'POST',
+          url: '/appointments',
+          payload: validBody('OBSERVATION'),
+        },
+        { role: ROLE.TUTOR, userId: SEED.TUTOR_USER_ID },
+      )
+
+      expect(response.statusCode).toBe(HTTP.FORBIDDEN)
+    })
   })
 
   describe('GET /appointments', () => {
@@ -133,6 +165,17 @@ describe('Appointment routes', () => {
         url: '/appointments?date=31-12-2026',
       })
       expect(response.statusCode).toBe(HTTP.UNPROCESSABLE)
+    })
+
+    it('rejeita com 403 quando perfil é TUTOR', async () => {
+      const response = await app.injectAuth(
+        {
+          method: 'GET',
+          url: '/appointments?date=2026-12-31',
+        },
+        { role: ROLE.TUTOR, userId: SEED.TUTOR_USER_ID },
+      )
+      expect(response.statusCode).toBe(HTTP.FORBIDDEN)
     })
   })
 
@@ -179,6 +222,18 @@ describe('Appointment routes', () => {
       })
       expect(response.statusCode).toBe(HTTP.NOT_FOUND)
     })
+
+    it('rejeita com 403 quando perfil é TUTOR', async () => {
+      const response = await app.injectAuth(
+        {
+          method: 'DELETE',
+          url: `/appointments/${SEED.APPOINTMENT_ID}`,
+          payload: { reason: 'tentativa tutor' },
+        },
+        { role: ROLE.TUTOR, userId: SEED.TUTOR_USER_ID },
+      )
+      expect(response.statusCode).toBe(HTTP.FORBIDDEN)
+    })
   })
 
   describe('PATCH /appointments/:id/reschedule', () => {
@@ -195,6 +250,18 @@ describe('Appointment routes', () => {
       })
 
       expect(response.statusCode).toBe(HTTP.OK)
+    })
+
+    it('rejeita com 403 quando perfil é TUTOR', async () => {
+      const response = await app.injectAuth(
+        {
+          method: 'PATCH',
+          url: `/appointments/${SEED.APPOINTMENT_ID}/reschedule`,
+          payload: { dateTime: FUTURE_ISO, endDateTime: FUTURE_END_ISO },
+        },
+        { role: ROLE.TUTOR, userId: SEED.TUTOR_USER_ID },
+      )
+      expect(response.statusCode).toBe(HTTP.FORBIDDEN)
     })
   })
 

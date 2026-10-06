@@ -10,6 +10,7 @@ import { rejectAppointmentController, rejectAppointmentParamsSchema, rejectAppoi
 
 export const appointmentRoutes: FastifyPluginAsyncZod = async (app) => {
   app.addHook('preHandler', verifyJwt)
+  app.addHook('preHandler', verifyRole('OWNER', 'VET'))
 
   app.post('/', {
     schema: {
