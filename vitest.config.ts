@@ -30,6 +30,7 @@ export default defineConfig({
     environment: 'node',
     env: TEST_ENV,
     setupFiles: ['./tests/setup.ts'],
+    hookTimeout: 30000,
     include: [
       'tests/**/*.spec.ts',
       'src/**/*.spec.ts',

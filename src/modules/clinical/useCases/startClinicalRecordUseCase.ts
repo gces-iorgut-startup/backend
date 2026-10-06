@@ -30,12 +30,14 @@ export class StartClinicalRecordUseCase {
       throw new AppError('Apenas o veterinário responsável pode iniciar o prontuário.', 403)
     }
 
-    if (appointment.status === 'COMPLETED') {
-      throw new AppError('Este agendamento já foi concluído.', 400)
-    }
-
-    if (appointment.status === 'CANCELLED') {
-      throw new AppError('Não é possível iniciar prontuário de agendamento cancelado.', 400)
+    if (appointment.status !== 'SCHEDULED' && appointment.status !== 'IN_PROGRESS') {
+      if (appointment.status === 'COMPLETED') {
+        throw new AppError('Este agendamento já foi concluído.', 400)
+      }
+      if (appointment.status === 'CANCELLED') {
+        throw new AppError('Não é possível iniciar prontuário de agendamento cancelado.', 400)
+      }
+      throw new AppError('Apenas agendamentos agendados ou em andamento podem ter prontuário iniciado.', 400)
     }
 
     const existingRecord = await this.clinicalRecordsRepository.findByAppointmentId(appointmentId)
@@ -49,7 +51,7 @@ export class StartClinicalRecordUseCase {
 
     const record = await this.clinicalRecordsRepository.create({
       patientId: appointment.patientId,
-      vetId: appointment.vetId,
+      vetId: appointment.vetId!,
       appointmentId,
     })
 
