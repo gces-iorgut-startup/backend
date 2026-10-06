@@ -35,7 +35,7 @@ export class PrismaAppointmentsRepository implements IAppointmentsRepository {
     return prisma.appointment.findFirst({
       where: {
         vetId,
-        status: { not: AppointmentStatus.CANCELLED },
+        status: { in: [AppointmentStatus.SCHEDULED, AppointmentStatus.IN_PROGRESS] },
         ...(excludeId && { id: { not: excludeId } }),
         dateTime: { lt: endDateTime },
         OR: [
@@ -61,7 +61,7 @@ export class PrismaAppointmentsRepository implements IAppointmentsRepository {
     return prisma.appointment.findMany({
       where: {
         dateTime: { gte: start, lte: end },
-        status: { not: AppointmentStatus.CANCELLED },
+        status: { in: [AppointmentStatus.SCHEDULED, AppointmentStatus.IN_PROGRESS, AppointmentStatus.COMPLETED] },
         patient: { clinicId },
         ...(vetId && { vetId }),
       },

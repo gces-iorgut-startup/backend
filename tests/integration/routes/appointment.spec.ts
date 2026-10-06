@@ -93,6 +93,22 @@ describe('Appointment routes', () => {
       expect(response.json().appointments).toHaveLength(1)
     })
 
+    it('chama findMany com allowlist de status operacionais (SCHEDULED, IN_PROGRESS, COMPLETED)', async () => {
+      prismaMock.appointment.findMany.mockResolvedValue([] as never)
+      const response = await app.injectAuth({
+        method: 'GET',
+        url: '/appointments?date=2026-12-31',
+      })
+      expect(response.statusCode).toBe(HTTP.OK)
+      expect(prismaMock.appointment.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: { in: ['SCHEDULED', 'IN_PROGRESS', 'COMPLETED'] },
+          }),
+        }),
+      )
+    })
+
     it('rejeita data em formato inválido', async () => {
       const response = await app.injectAuth({
         method: 'GET',

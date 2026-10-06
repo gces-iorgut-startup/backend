@@ -7,6 +7,7 @@ import type { Appointment } from '@prisma/client'
 
 interface CreateAppointmentRequest extends CreateAppointmentDTO {
   clinicId: string
+  vetId: string
 }
 
 export class CreateAppointmentUseCase {

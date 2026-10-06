@@ -145,7 +145,7 @@ model Patient {
 model Appointment {
   id           String              @id @default(uuid())
   patientId    String              @map("patient_id")
-  vetId        String              @map("vet_id")
+  vetId        String?             @map("vet_id")
   dateTime     DateTime            @map("date_time")
   endDateTime  DateTime?           @map("end_date_time")
   category     AppointmentCategory
@@ -156,7 +156,7 @@ model Appointment {
   updatedAt    DateTime            @updatedAt @map("updated_at")
 
   patient        Patient         @relation(fields: [patientId], references: [id])
-  vet            User            @relation("vet_appointments", fields: [vetId], references: [id])
+  vet            User?           @relation("vet_appointments", fields: [vetId], references: [id])
   clinicalRecord ClinicalRecord?
 
   @@index([vetId, dateTime])
@@ -171,10 +171,12 @@ enum AppointmentCategory {
 }
 
 enum AppointmentStatus {
-  SCHEDULED   // Agendado
-  IN_PROGRESS // Em atendimento
-  COMPLETED   // Finalizado
-  CANCELLED   // Cancelado (US08)
+  SCHEDULED        // Agendado
+  IN_PROGRESS      // Em atendimento
+  COMPLETED        // Finalizado
+  CANCELLED        // Cancelado (US08)
+  PENDING_APPROVAL // Solicitação pendente de aprovação
+  REJECTED         // Solicitação recusada pela clínica
 }
 
 // ── Clinical Records (US09, US10, US11, US13) ────────

@@ -101,6 +101,26 @@ describe('ListAppointmentsByDayUseCase', () => {
     const result = await new ListAppointmentsByDayUseCase(appointmentsRepo).execute({ date: '2099-01-01', clinicId: CLINIC_ID })
     expect(result).toHaveLength(0)
   })
+
+  it('não deve listar agendamentos com status PENDING_APPROVAL ou REJECTED', async () => {
+    const pending = await appointmentsRepo.create({
+      patientId: 'p4',
+      dateTime: new Date('2026-04-01T11:00:00'),
+      category: 'OBSERVATION',
+    })
+    await appointmentsRepo.updateStatus(pending.id, 'PENDING_APPROVAL')
+
+    const rejected = await appointmentsRepo.create({
+      patientId: 'p5',
+      dateTime: new Date('2026-04-01T12:00:00'),
+      category: 'OBSERVATION',
+    })
+    await appointmentsRepo.updateStatus(rejected.id, 'REJECTED')
+
+    const result = await new ListAppointmentsByDayUseCase(appointmentsRepo).execute({ date: '2026-04-01', clinicId: CLINIC_ID })
+    expect(result).toHaveLength(2)
+    expect(result.some(a => a.status === 'PENDING_APPROVAL' || a.status === 'REJECTED')).toBe(false)
+  })
 })
 
 describe('CancelAppointmentUseCase', () => {
@@ -200,6 +220,30 @@ describe('CreateAppointmentUseCase — conflitos', () => {
     const appt = await sut.execute({ patientId, vetId, clinicId: CLINIC_ID, dateTime: new Date('2099-03-01T09:00:00'), endDateTime: new Date('2099-03-01T09:15:00'), category: 'OBSERVATION' })
     await new CancelAppointmentUseCase(appointmentsRepo).execute({ appointmentId: appt.id, clinicId: CLINIC_ID, reason: 'Paciente cancelou' })
     const result = await sut.execute({ patientId, vetId, clinicId: CLINIC_ID, dateTime: new Date('2099-03-01T09:00:00'), endDateTime: new Date('2099-03-01T09:15:00'), category: 'OBSERVATION' })
+    expect(result.status).toBe('SCHEDULED')
+  })
+
+  it('não deve considerar solicitações com status PENDING_APPROVAL ou REJECTED como conflito', async () => {
+    const { appointmentsRepo, patientsRepo, usersRepo, patientId, vetId } = await setupRepos()
+    const sut = new CreateAppointmentUseCase(appointmentsRepo, patientsRepo, usersRepo)
+
+    const pending = await appointmentsRepo.create({
+      patientId,
+      vetId,
+      dateTime: new Date('2099-03-01T09:00:00'),
+      endDateTime: new Date('2099-03-01T09:15:00'),
+      category: 'OBSERVATION',
+    })
+    await appointmentsRepo.updateStatus(pending.id, 'PENDING_APPROVAL')
+
+    const result = await sut.execute({
+      patientId,
+      vetId,
+      clinicId: CLINIC_ID,
+      dateTime: new Date('2099-03-01T09:00:00'),
+      endDateTime: new Date('2099-03-01T09:15:00'),
+      category: 'OBSERVATION',
+    })
     expect(result.status).toBe('SCHEDULED')
   })
 })

@@ -13,12 +13,12 @@ export const DEFAULT_APPOINTMENT_DURATION_MS = 15 * 60 * 1000
 
 export type AppointmentWithRelations = Appointment & {
   patient: Pick<Patient, 'id' | 'name' | 'species' | 'clinicId' | 'photoUrl'>
-  vet: Pick<User, 'id' | 'name'>
+  vet: Pick<User, 'id' | 'name'> | null
 }
 
 export interface CreateAppointmentDTO {
   patientId: string
-  vetId: string
+  vetId?: string
   dateTime: Date
   endDateTime?: Date
   category: AppointmentCategory

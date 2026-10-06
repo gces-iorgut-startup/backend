@@ -47,6 +47,8 @@ describe('Clinical record routes', () => {
     it.each([
       { status: 'COMPLETED', code: HTTP.BAD_REQUEST },
       { status: 'CANCELLED', code: HTTP.BAD_REQUEST },
+      { status: 'PENDING_APPROVAL', code: HTTP.BAD_REQUEST },
+      { status: 'REJECTED', code: HTTP.BAD_REQUEST },
     ] as const)(
       'rejeita quando agendamento está $status',
       async ({ status, code }) => {

@@ -15,11 +15,11 @@ export class InMemoryAppointmentsRepository implements IAppointmentsRepository {
     const appointment: AppointmentWithRelations = {
       id: randomUUID(),
       patientId: data.patientId,
-      vetId: data.vetId,
+      vetId: data.vetId ?? null,
       dateTime: data.dateTime,
       endDateTime: data.endDateTime ?? null,
       category: data.category,
-      status: AppointmentStatus.SCHEDULED,
+      status: (data as { status?: AppointmentStatus }).status ?? AppointmentStatus.SCHEDULED,
       observation: data.observation ?? null,
       cancelReason: null,
       createdAt: new Date(),
@@ -31,7 +31,7 @@ export class InMemoryAppointmentsRepository implements IAppointmentsRepository {
         clinicId: 'clinic-1',
         photoUrl: null,
       },
-      vet: { id: data.vetId, name: 'Veterinário' },
+      vet: data.vetId ? { id: data.vetId, name: 'Veterinário' } : null,
     }
     this.items.push(appointment)
     return appointment
@@ -54,7 +54,7 @@ export class InMemoryAppointmentsRepository implements IAppointmentsRepository {
   async findConflict(vetId: string, dateTime: Date, endDateTime: Date, excludeId?: string): Promise<Appointment | null> {
     return this.items.find(a =>
       a.vetId === vetId &&
-      a.status !== AppointmentStatus.CANCELLED &&
+      (a.status === AppointmentStatus.SCHEDULED || a.status === AppointmentStatus.IN_PROGRESS) &&
       (!excludeId || a.id !== excludeId) &&
       a.dateTime < endDateTime &&
       (a.endDateTime === null
@@ -70,7 +70,7 @@ export class InMemoryAppointmentsRepository implements IAppointmentsRepository {
       return (
         aDateStr === dateStr &&
         a.patient.clinicId === clinicId &&
-        a.status !== AppointmentStatus.CANCELLED &&
+        (a.status === AppointmentStatus.SCHEDULED || a.status === AppointmentStatus.IN_PROGRESS || a.status === AppointmentStatus.COMPLETED) &&
         (!vetId || a.vetId === vetId)
       )
     })
