@@ -218,6 +218,40 @@ describe('Clinical Records Module', () => {
     ).rejects.toThrow('Apenas o veterinário responsável pode iniciar o prontuário.')
   })
 
+  it('should not allow starting a record if appointment status is PENDING_APPROVAL', async () => {
+    const vetId = randomUUID()
+    const appointment = await appointmentsRepository.create({
+      patientId: 'patient-1',
+      vetId,
+      dateTime: new Date(),
+      category: 'OBSERVATION',
+    })
+    await appointmentsRepository.updateStatus(appointment.id, 'PENDING_APPROVAL')
+
+    await expect(startUseCase.execute({
+      appointmentId: appointment.id,
+      vetId,
+      clinicId: 'clinic-1',
+    })).rejects.toThrow('Apenas agendamentos agendados ou em andamento podem ter prontuário iniciado.')
+  })
+
+  it('should not allow starting a record if appointment status is REJECTED', async () => {
+    const vetId = randomUUID()
+    const appointment = await appointmentsRepository.create({
+      patientId: 'patient-1',
+      vetId,
+      dateTime: new Date(),
+      category: 'OBSERVATION',
+    })
+    await appointmentsRepository.updateStatus(appointment.id, 'REJECTED')
+
+    await expect(startUseCase.execute({
+      appointmentId: appointment.id,
+      vetId,
+      clinicId: 'clinic-1',
+    })).rejects.toThrow('Apenas agendamentos agendados ou em andamento podem ter prontuário iniciado.')
+  })
+
   it('should update clinical record notes and weight', async () => {
     const vetId = randomUUID()
     const appointment = await appointmentsRepository.create({

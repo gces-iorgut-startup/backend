@@ -69,6 +69,7 @@ export class PrismaDashboardRepository implements IDashboardRepository {
     const appointments = await prisma.appointment.findMany({
       where: {
         dateTime: { gte: startOfDay, lte: endOfDay },
+        status: { in: ['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'] },
         ...(vetId && { vetId }),
         ...(clinicId && { patient: { clinicId } }),
       },
@@ -109,11 +110,13 @@ export class PrismaDashboardRepository implements IDashboardRepository {
     const weekWhere: Prisma.AppointmentWhereInput = {
       ...clinicWhere,
       dateTime: weekRange,
+      status: { in: ['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'] },
     }
 
     const monthWhere: Prisma.AppointmentWhereInput = {
       ...clinicWhere,
       dateTime: monthRange,
+      status: { in: ['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'] },
     }
 
     const [
@@ -130,14 +133,14 @@ export class PrismaDashboardRepository implements IDashboardRepository {
         where: {
           ...clinicWhere,
           dateTime: { lt: now },
-          status: { not: 'CANCELLED' },
+          status: { in: ['SCHEDULED', 'IN_PROGRESS', 'COMPLETED'] },
         },
       }),
       prisma.appointment.count({
         where: {
           ...clinicWhere,
           dateTime: { gt: now },
-          status: { not: 'CANCELLED' },
+          status: 'SCHEDULED',
         },
       }),
       prisma.appointment.groupBy({
@@ -191,6 +194,7 @@ export class PrismaDashboardRepository implements IDashboardRepository {
       where: {
         dateTime: { gte: startDate.toDate(), lte: endDate.toDate() },
         patient: { clinicId },
+        status: { in: ['SCHEDULED', 'IN_PROGRESS', 'COMPLETED'] },
       },
       select: { dateTime: true },
     })
