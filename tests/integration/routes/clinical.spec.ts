@@ -12,6 +12,7 @@ describe('Clinical record routes', () => {
 
   describe('POST /clinical-records', () => {
     it('inicia prontuário a partir de agendamento SCHEDULED', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(Factory.owner() as never)
       prismaMock.appointment.findFirst.mockResolvedValue(Factory.appointment() as never)
       prismaMock.clinicalRecord.findUnique.mockResolvedValue(null)
       prismaMock.clinicalRecord.create.mockResolvedValue(Factory.clinicalRecord() as never)
@@ -29,7 +30,36 @@ describe('Clinical record routes', () => {
       expect(response.json().id).toBe(SEED.RECORD_ID)
     })
 
+    it('inicia prontuário como OWNER com CRMV para agendamento de outro veterinário', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(
+        Factory.owner({ id: SEED.OWNER_ID, crmv: 'CRMV-SP 12345' }) as never,
+      )
+      prismaMock.appointment.findFirst.mockResolvedValue(
+        Factory.appointment({ vetId: SEED.VET_ID }) as never,
+      )
+      prismaMock.clinicalRecord.findUnique.mockResolvedValue(null)
+      prismaMock.clinicalRecord.create.mockResolvedValue(
+        Factory.clinicalRecord({ vetId: SEED.OWNER_ID }) as never,
+      )
+      prismaMock.appointment.update.mockResolvedValue(
+        Factory.appointment({ status: 'IN_PROGRESS' }) as never,
+      )
+
+      const response = await app.injectAuth(
+        {
+          method: 'POST',
+          url: '/clinical-records',
+          payload: { appointmentId: SEED.APPOINTMENT_ID },
+        },
+        { userId: SEED.OWNER_ID, role: ROLE.OWNER }
+      )
+
+      expect(response.statusCode).toBe(HTTP.CREATED)
+      expect(response.json().vetId).toBe(SEED.OWNER_ID)
+    })
+
     it('reutiliza prontuário existente do agendamento', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(Factory.owner() as never)
       prismaMock.appointment.findFirst.mockResolvedValue(
         Factory.appointment({ status: 'IN_PROGRESS' }) as never,
       )
@@ -52,6 +82,7 @@ describe('Clinical record routes', () => {
     ] as const)(
       'rejeita quando agendamento está $status',
       async ({ status, code }) => {
+        prismaMock.user.findUnique.mockResolvedValue(Factory.owner() as never)
         prismaMock.appointment.findFirst.mockResolvedValue(
           Factory.appointment({ status }) as never,
         )
@@ -66,15 +97,82 @@ describe('Clinical record routes', () => {
       },
     )
 
-    it('retorna 403 quando vet do token não é o responsável', async () => {
+    it('rejeita com 403 quando OWNER não possui CRMV cadastrado', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(
+        Factory.owner({ id: SEED.OWNER_ID, crmv: null }) as never,
+      )
       prismaMock.appointment.findFirst.mockResolvedValue(
         Factory.appointment({ vetId: SEED.VET_ID }) as never,
       )
-      const response = await app.injectAuth({
-        method: 'POST',
-        url: '/clinical-records',
-        payload: { appointmentId: SEED.APPOINTMENT_ID },
-      })
+
+      const response = await app.injectAuth(
+        {
+          method: 'POST',
+          url: '/clinical-records',
+          payload: { appointmentId: SEED.APPOINTMENT_ID },
+        },
+        { userId: SEED.OWNER_ID, role: ROLE.OWNER }
+      )
+
+      expect(response.statusCode).toBe(HTTP.FORBIDDEN)
+    })
+
+    it('retorna 403 quando vet do token não é o responsável', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(
+        Factory.vet({ id: 'other-vet-id' }) as never,
+      )
+      prismaMock.appointment.findFirst.mockResolvedValue(
+        Factory.appointment({ vetId: SEED.VET_ID }) as never,
+      )
+      const response = await app.injectAuth(
+        {
+          method: 'POST',
+          url: '/clinical-records',
+          payload: { appointmentId: SEED.APPOINTMENT_ID },
+        },
+        { userId: 'other-vet-id', role: ROLE.VET }
+      )
+      expect(response.statusCode).toBe(HTTP.FORBIDDEN)
+    })
+
+    it('retorna 403 quando TUTOR tenta iniciar prontuário', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(
+        Factory.tutorUser({ id: SEED.TUTOR_USER_ID }) as never,
+      )
+      prismaMock.appointment.findFirst.mockResolvedValue(
+        Factory.appointment() as never,
+      )
+      const response = await app.injectAuth(
+        {
+          method: 'POST',
+          url: '/clinical-records',
+          payload: { appointmentId: SEED.APPOINTMENT_ID },
+        },
+        { userId: SEED.TUTOR_USER_ID, role: ROLE.TUTOR }
+      )
+      expect(response.statusCode).toBe(HTTP.FORBIDDEN)
+    })
+
+    it('retorna 403 quando VET originalmente agendado tenta iniciar após OWNER já ter iniciado', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(
+        Factory.vet({ id: SEED.VET_ID }) as never,
+      )
+      prismaMock.appointment.findFirst.mockResolvedValue(
+        Factory.appointment({ vetId: SEED.VET_ID }) as never,
+      )
+      prismaMock.clinicalRecord.findUnique.mockResolvedValue(
+        Factory.clinicalRecord({ vetId: SEED.OWNER_ID }) as never,
+      )
+
+      const response = await app.injectAuth(
+        {
+          method: 'POST',
+          url: '/clinical-records',
+          payload: { appointmentId: SEED.APPOINTMENT_ID },
+        },
+        { userId: SEED.VET_ID, role: ROLE.VET }
+      )
+
       expect(response.statusCode).toBe(HTTP.FORBIDDEN)
     })
 

@@ -13,6 +13,7 @@ export async function startClinicalRecordController(
   const { appointmentId } = request.body
   const vetId = request.user.userId
   const clinicId = request.user.clinicId
+  const userRole = request.user.role
 
   const useCase = makeStartClinicalRecordUseCase()
 
@@ -20,6 +21,7 @@ export async function startClinicalRecordController(
     appointmentId,
     vetId,
     clinicId,
+    userRole,
   })
 
   return reply.status(201).send(record)
