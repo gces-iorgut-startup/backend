@@ -69,6 +69,44 @@ export class PrismaAppointmentsRepository implements IAppointmentsRepository {
       orderBy: { dateTime: 'asc' },
     })
   }
+
+  async listByStatus(status: AppointmentStatus, clinicId: string, date?: Date): Promise<AppointmentWithRelations[]> {
+    let dayRange: { gte: Date, lte: Date } | undefined
+    if (date) {
+      const start = new Date(date)
+      start.setHours(0, 0, 0, 0)
+      const end = new Date(date)
+      end.setHours(23, 59, 59, 999)
+      dayRange = { gte: start, lte: end }
+    }
+
+    return prisma.appointment.findMany({
+      where: {
+        status,
+        patient: { clinicId },
+        ...(dayRange && { dateTime: dayRange }),
+      },
+      include: withRelations,
+      orderBy: { dateTime: 'asc' },
+    })
+  }
+
+  async approve(id: string, vetId: string, endDateTime: Date): Promise<AppointmentWithRelations> {
+    return prisma.appointment.update({
+      where: { id },
+      data: { status: AppointmentStatus.SCHEDULED, vetId, endDateTime },
+      include: withRelations,
+    })
+  }
+
+  async reject(id: string, reason: string): Promise<AppointmentWithRelations> {
+    return prisma.appointment.update({
+      where: { id },
+      data: { status: AppointmentStatus.REJECTED, cancelReason: reason },
+      include: withRelations,
+    })
+  }
+
   async cancel(id: string, reason: string): Promise<Appointment> {
     return prisma.appointment.update({
       where: { id },

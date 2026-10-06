@@ -75,6 +75,35 @@ export class InMemoryAppointmentsRepository implements IAppointmentsRepository {
       )
     })
   }
+  async listByStatus(status: AppointmentStatus, clinicId: string, date?: Date): Promise<AppointmentWithRelations[]> {
+    const dateStr = date?.toISOString().slice(0, 10)
+    return this.items
+      .filter(a =>
+        a.status === status &&
+        a.patient.clinicId === clinicId &&
+        (!dateStr || a.dateTime.toISOString().slice(0, 10) === dateStr)
+      )
+      .sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime())
+  }
+
+  async approve(id: string, vetId: string, endDateTime: Date): Promise<AppointmentWithRelations> {
+    const index = this.items.findIndex(a => a.id === id)
+    this.items[index].status = AppointmentStatus.SCHEDULED
+    this.items[index].vetId = vetId
+    this.items[index].vet = { id: vetId, name: 'Veterinário' }
+    this.items[index].endDateTime = endDateTime
+    this.items[index].updatedAt = new Date()
+    return this.items[index]
+  }
+
+  async reject(id: string, reason: string): Promise<AppointmentWithRelations> {
+    const index = this.items.findIndex(a => a.id === id)
+    this.items[index].status = AppointmentStatus.REJECTED
+    this.items[index].cancelReason = reason
+    this.items[index].updatedAt = new Date()
+    return this.items[index]
+  }
+
   async cancel(id: string, reason: string): Promise<Appointment> {
     const index = this.items.findIndex(a => a.id === id)
     this.items[index].status = AppointmentStatus.CANCELLED

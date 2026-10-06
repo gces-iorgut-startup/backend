@@ -30,7 +30,10 @@ export interface IAppointmentsRepository {
   findById(id: string, clinicId: string): Promise<Appointment | null>
   findConflict(vetId: string, dateTime: Date, endDateTime: Date, excludeId?: string): Promise<Appointment | null>
   listByDay(date: Date, clinicId: string, vetId?: string): Promise<AppointmentWithRelations[]>
+  listByStatus(status: AppointmentStatus, clinicId: string, date?: Date): Promise<AppointmentWithRelations[]>
   updateStatus(id: string, status: AppointmentStatus, endDateTime?: Date): Promise<Appointment>
   cancel(id: string, reason: string): Promise<Appointment>
   reschedule(id: string, newDateTime: Date, newEndDateTime?: Date): Promise<Appointment>
+  approve(id: string, vetId: string, endDateTime: Date): Promise<AppointmentWithRelations>
+  reject(id: string, reason: string): Promise<AppointmentWithRelations>
 }
