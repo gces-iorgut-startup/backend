@@ -18,44 +18,51 @@ vi.mock("@config/prisma", async () => {
 
 vi.mock("resend", () => {
   return {
-    Resend: vi.fn().mockImplementation(() => ({
-      emails: {
-        send: vi
-          .fn()
-          .mockResolvedValue({ data: { id: "mail-id" }, error: null }),
-      },
-    })),
+    // Vitest 4+ exige function/class para mocks usados com `new`
+    Resend: vi.fn().mockImplementation(function () {
+      return {
+        emails: {
+          send: vi
+            .fn()
+            .mockResolvedValue({ data: { id: "mail-id" }, error: null }),
+        },
+      };
+    }),
   };
 });
 
 vi.mock("@google/generative-ai", () => {
   return {
-    GoogleGenerativeAI: vi.fn().mockImplementation(() => ({
-      getGenerativeModel: vi.fn().mockImplementation(() => ({
-        generateContent: vi.fn().mockResolvedValue({
-          response: { text: () => "Resumo de IA simulado para o atendimento." },
-        }),
-      })),
-    })),
+    GoogleGenerativeAI: vi.fn().mockImplementation(function () {
+      return {
+        getGenerativeModel: vi.fn().mockImplementation(() => ({
+          generateContent: vi.fn().mockResolvedValue({
+            response: { text: () => "Resumo de IA simulado para o atendimento." },
+          }),
+        })),
+      };
+    }),
   };
 });
 
 vi.mock("google-auth-library", () => {
   return {
-    OAuth2Client: vi.fn().mockImplementation(() => ({
-      getTokenInfo: vi.fn().mockResolvedValue({
-        email: "google-user@iougurt.com",
-        sub: "google-sub-123",
-      }),
-      verifyIdToken: vi.fn().mockResolvedValue({
-        getPayload: () => ({
-          sub: "google-sub-123",
+    OAuth2Client: vi.fn().mockImplementation(function () {
+      return {
+        getTokenInfo: vi.fn().mockResolvedValue({
           email: "google-user@iougurt.com",
-          email_verified: true,
-          name: "Google User",
+          sub: "google-sub-123",
         }),
-      }),
-    })),
+        verifyIdToken: vi.fn().mockResolvedValue({
+          getPayload: () => ({
+            sub: "google-sub-123",
+            email: "google-user@iougurt.com",
+            email_verified: true,
+            name: "Google User",
+          }),
+        }),
+      };
+    }),
   };
 });
 
