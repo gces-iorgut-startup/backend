@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:routes": "vitest run tests/integration/routes",
+    "test:real-db": "cross-env-shell \"DATABASE_URL=${DATABASE_URL:-postgresql://iougurt:iougurt@localhost:5432/iougurt} VITEST_REAL_DB=true prisma migrate deploy\" && cross-env-shell \"DATABASE_URL=${DATABASE_URL:-postgresql://iougurt:iougurt@localhost:5432/iougurt} VITEST_REAL_DB=true vitest run tests/integration/real-db/**/*.spec.ts\"",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:generate": "prisma generate"
@@ -44,6 +45,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.9.0",
     "@vitest/coverage-v8": "^2.1.9",
+    "cross-env": "^7.0.1",
     "prisma": "^5.22.0",
     "tsup": "^8.3.5",
     "tsx": "^4.19.2",
