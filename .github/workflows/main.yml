@@ -11,7 +11,7 @@ env:
   TEST_DB_PASSWORD: iougurt
   TEST_DB_NAME: iougurt_test
   TEST_JWT_SECRET: test-jwt-secret
-  NODE_VERSION: '20'
+  NODE_VERSION: '22'
 
 jobs:
   lint-e-testes:
@@ -43,7 +43,7 @@ jobs:
           cache: 'npm'
 
       - name: Instalar dependências
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Auditar dependências
         run: npm audit --audit-level=high

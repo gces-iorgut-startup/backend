@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 
 RUN apk add --no-cache openssl libc6-compat
 RUN addgroup -g 1001 iougurt && adduser -u 1001 -G iougurt -s /bin/sh -D iougurt
