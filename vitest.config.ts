@@ -18,6 +18,7 @@ const TEST_ENV = {
   GEMINI_MODEL: "gemini-2.5-flash",
   NODE_ENV: "test",
   APP_URL: "http://localhost:3000",
+  E2E_TEST_SECRET: "test-e2e-secret",
 };
 
 export default defineConfig({

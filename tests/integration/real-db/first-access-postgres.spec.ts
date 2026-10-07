@@ -6,6 +6,7 @@ import { prisma } from "@config/prisma";
 
 const TUTOR_EMAIL = "tutor-primeiro-acesso@iougurt.com";
 const TUTOR_PASSWORD = "Tutor@123456";
+const E2E_HEADERS = { "x-e2e-secret": "test-e2e-secret" };
 
 async function resetDatabase() {
   const dbName = new URL(process.env.DATABASE_URL ?? "").pathname.slice(1);
@@ -64,6 +65,7 @@ describe("Primeiro acesso do tutor (PostgreSQL real)", () => {
     const tokenRes = await app.inject({
       method: "POST",
       url: "/test/first-access-token",
+      headers: E2E_HEADERS,
       payload: { email: TUTOR_EMAIL },
     });
     expect(tokenRes.statusCode).toBe(201);
@@ -90,6 +92,7 @@ describe("Primeiro acesso do tutor (PostgreSQL real)", () => {
     const tokenRes = await app.inject({
       method: "POST",
       url: "/test/first-access-token",
+      headers: E2E_HEADERS,
       payload: { email: TUTOR_EMAIL },
     });
     const { token } = tokenRes.json<{ token: string }>();
@@ -113,6 +116,7 @@ describe("Primeiro acesso do tutor (PostgreSQL real)", () => {
     const res = await app.inject({
       method: "POST",
       url: "/test/first-access-token",
+      headers: E2E_HEADERS,
       payload: { email: "inexistente@iougurt.com" },
     });
     expect(res.statusCode).toBe(404);

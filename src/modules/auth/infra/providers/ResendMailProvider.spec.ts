@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Resend } from 'resend'
 import { ResendMailProvider } from './ResendMailProvider'
 import { env } from '../../../../config/env'
 import type { FastifyBaseLogger } from 'fastify'
@@ -36,6 +37,18 @@ describe('ResendMailProvider', () => {
       expect.objectContaining({ to: 'tutor@exemplo.com' }),
       expect.stringContaining('não está configurado'),
     )
+  })
+
+  it('não deve criar o cliente do SDK ao construir o provider sem chave', async () => {
+    // O SDK real lança "Missing API key" ao ser criado sem chave
+    const resendMock = vi.mocked(Resend)
+    resendMock.mockClear()
+    env.RESEND_API_KEY = ''
+
+    const provider = new ResendMailProvider(fakeLogger as unknown as FastifyBaseLogger)
+    await provider.sendMail({ to: 'tutor@exemplo.com', subject: 'Teste', html: '<p>Teste</p>' })
+
+    expect(resendMock).not.toHaveBeenCalled()
   })
 
   it('deve lançar ServiceUnavailable em assertConfigured quando não configurado', () => {

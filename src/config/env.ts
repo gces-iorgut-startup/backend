@@ -21,6 +21,9 @@ const envSchema = z.object({
   MAIL_FROM: z.union([z.string().email(), z.literal('')]).default(''),
   GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
   GEMINI_FALLBACK_MODELS: z.string().default('gemini-2.5-flash-lite'),
+  // Segredo exigido (header x-e2e-secret) pelas rotas /test, usadas só nos testes E2E
+  // com NODE_ENV=test. Vazio mantém essas rotas desligadas.
+  E2E_TEST_SECRET: z.string().default(''),
 })
 
 const _env = envSchema.safeParse(process.env)

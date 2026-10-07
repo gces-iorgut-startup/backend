@@ -5,10 +5,15 @@ import { FastifyBaseLogger } from 'fastify'
 import type { IMailProvider, SendMailData } from '../../providers/IMailProvider'
 
 export class ResendMailProvider implements IMailProvider {
-  private client: Resend
+  // O SDK lança "Missing API key" se o cliente for criado sem chave. Por isso ele é
+  // criado só quando há um envio configurado, e não na construção do provider.
+  private client?: Resend
 
-  constructor(private logger?: FastifyBaseLogger) {
-    this.client = new Resend(env.RESEND_API_KEY)
+  constructor(private logger?: FastifyBaseLogger) {}
+
+  private getClient(): Resend {
+    this.client ??= new Resend(env.RESEND_API_KEY)
+    return this.client
   }
 
   isConfigured(): boolean {
@@ -29,7 +34,7 @@ export class ResendMailProvider implements IMailProvider {
     }
 
     try {
-      const response = await this.client.emails.send({
+      const response = await this.getClient().emails.send({
         from: env.MAIL_FROM,
         to,
         subject,
