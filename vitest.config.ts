@@ -1,6 +1,9 @@
 import { defineConfig } from "vitest/config";
 import path from "path";
 
+const REAL_DB = process.env.VITEST_REAL_DB === "true";
+const REAL_DB_TESTS = "tests/integration/real-db/**/*.spec.ts";
+
 const TEST_ENV = {
   DATABASE_URL:
     process.env.DATABASE_URL ?? "postgresql://test:test@localhost:5432/test",
@@ -32,7 +35,10 @@ export default defineConfig({
     env: TEST_ENV,
     hookTimeout: 30000,
     setupFiles: ["./tests/setup.ts"],
-    include: ["tests/**/*.spec.ts", "src/**/*.spec.ts"],
+    include: REAL_DB ? [REAL_DB_TESTS] : ["tests/**/*.spec.ts", "src/**/*.spec.ts"],
+    exclude: REAL_DB ? ["node_modules/**"] : ["node_modules/**", REAL_DB_TESTS],
+    // Os arquivos de banco real compartilham o mesmo schema: rodar em série.
+    fileParallelism: !REAL_DB,
     coverage: {
       provider: "v8",
       reporter: ["text", "text-summary", "html", "lcov", "json-summary"],

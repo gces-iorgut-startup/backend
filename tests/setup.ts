@@ -17,10 +17,6 @@ vi.mock("@config/prisma", async () => {
 });
 
 vi.mock("resend", () => {
-  if (useRealPrisma) {
-    return {};
-  }
-
   return {
     Resend: vi.fn().mockImplementation(() => ({
       emails: {
@@ -33,10 +29,6 @@ vi.mock("resend", () => {
 });
 
 vi.mock("@google/generative-ai", () => {
-  if (useRealPrisma) {
-    return {};
-  }
-
   return {
     GoogleGenerativeAI: vi.fn().mockImplementation(() => ({
       getGenerativeModel: vi.fn().mockImplementation(() => ({
@@ -49,10 +41,6 @@ vi.mock("@google/generative-ai", () => {
 });
 
 vi.mock("google-auth-library", () => {
-  if (useRealPrisma) {
-    return {};
-  }
-
   return {
     OAuth2Client: vi.fn().mockImplementation(() => ({
       getTokenInfo: vi.fn().mockResolvedValue({

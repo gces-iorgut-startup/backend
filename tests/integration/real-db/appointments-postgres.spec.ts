@@ -4,37 +4,37 @@ import { ROLE } from "../../utils/constants";
 import { TestApp } from "../../utils/app-builder";
 import { prisma } from "@config/prisma";
 
+async function resetDatabase() {
+  const dbName = new URL(process.env.DATABASE_URL ?? "").pathname.slice(1);
+  if (!dbName.includes("test")) {
+    throw new Error(
+      `Recusando limpar o banco "${dbName}": use um banco de teste (nome contendo "test").`,
+    );
+  }
+
+  const tables = await prisma.$queryRaw<{ tablename: string }[]>`
+    SELECT tablename FROM pg_tables
+    WHERE schemaname = current_schema() AND tablename <> '_prisma_migrations'
+  `;
+  if (tables.length === 0) return;
+
+  const list = tables.map(({ tablename }) => `"${tablename}"`).join(", ");
+  await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${list} RESTART IDENTITY CASCADE`);
+}
+
 describe("PostgreSQL integration tests", () => {
-  let app: TestApp | undefined;
+  let app: TestApp;
 
   beforeEach(async () => {
-    await prisma.$transaction([
-      prisma.appointment.deleteMany(),
-      prisma.clinicalRecord.deleteMany(),
-      prisma.examFile.deleteMany(),
-      prisma.vaccination.deleteMany(),
-      prisma.patient.deleteMany(),
-      prisma.tutor.deleteMany(),
-      prisma.refreshToken.deleteMany(),
-      prisma.passwordToken.deleteMany(),
-      prisma.user.deleteMany(),
-      prisma.clinic.deleteMany(),
-    ]);
-
+    await resetDatabase();
     app = await TestApp.build();
   });
 
   afterEach(async () => {
-    if (app) {
-      await app.close();
-      app = undefined;
-    }
+    await app?.close();
   });
 
   afterAll(async () => {
-    if (app) {
-      await app.close();
-    }
     await prisma.$disconnect();
   });
 
@@ -224,7 +224,7 @@ describe("PostgreSQL integration tests", () => {
           email: "duplicado-b@iougurt.com",
         },
       }),
-    ).rejects.toThrow();
+    ).rejects.toMatchObject({ code: "P2002" });
 
     const tutorCrossClinic = await prisma.tutor.create({
       data: {
@@ -268,7 +268,7 @@ describe("PostgreSQL integration tests", () => {
           },
         });
       }),
-    ).rejects.toThrow();
+    ).rejects.toMatchObject({ code: "P2002" });
 
     const afterCount = await prisma.user.count({
       where: { clinicId: clinicA.id },
