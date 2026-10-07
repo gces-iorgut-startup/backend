@@ -67,9 +67,12 @@ export function createApp() {
     .map((origin) => origin.trim())
     .filter(Boolean)
   const allowAllOrigins = corsOrigins.includes('*')
+  // Sem `methods`, o padrão do plugin libera só GET, HEAD e POST, e o navegador
+  // bloqueia DELETE, PATCH e PUT em requisições cross-origin (preflight).
   app.register(fastifyCors, {
     origin: allowAllOrigins ? '*' : corsOrigins,
     credentials: !allowAllOrigins,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   })
 
   app.register(fastifyJwt, {
