@@ -100,7 +100,11 @@ export function createApp() {
   })
 
   // ── Health Check ─────────────────────────────────────
-  app.get('/health', () => ({ status: 'ok' }))
+  app.get('/health', () => ({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  }))
 
   // ── Routes ────────────────────────────────────────────
   app.register(authRoutes, { prefix: '/auth' })
