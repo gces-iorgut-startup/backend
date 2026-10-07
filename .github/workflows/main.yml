@@ -11,7 +11,7 @@ env:
   TEST_DB_PASSWORD: iougurt
   TEST_DB_NAME: iougurt_test
   TEST_JWT_SECRET: test-jwt-secret
-  NODE_VERSION: '22'
+  NODE_VERSION: '20'
 
 jobs:
   lint-e-testes:
