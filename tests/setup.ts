@@ -96,4 +96,4 @@ beforeEach(() => {
   });
 });
 
-export const prismaMock = prisma as unknown as ReturnType<typeof mockDeep>;
+export const prismaMock = prisma as unknown as PrismaClient;
