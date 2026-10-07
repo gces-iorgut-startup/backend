@@ -11,7 +11,8 @@ export class TestApp {
   private constructor(public readonly fastify: FastifyInstance) {}
 
   static async build(): Promise<TestApp> {
-    const { app } = await import('../../src/app')
+    const { createApp } = await import('../../src/app')
+    const app = createApp()
     await app.ready()
     return new TestApp(app)
   }

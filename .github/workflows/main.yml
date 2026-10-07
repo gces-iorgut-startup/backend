@@ -11,7 +11,7 @@ env:
   TEST_DB_PASSWORD: iougurt
   TEST_DB_NAME: iougurt_test
   TEST_JWT_SECRET: test-jwt-secret
-  NODE_VERSION: '20'
+  NODE_VERSION: '22'
 
 jobs:
   lint-e-testes:
@@ -45,6 +45,9 @@ jobs:
       - name: Instalar dependências
         run: npm ci --legacy-peer-deps
 
+      - name: Auditar dependências
+        run: npm audit --audit-level=high
+
       - name: Gerar Prisma Client
         run: npx prisma generate
 
@@ -62,6 +65,14 @@ jobs:
           JWT_SECRET: test-jwt-secret
           NODE_ENV: test
         run: npm run test:coverage
+
+      - name: Rodar testes de integração com PostgreSQL real
+        env:
+          DATABASE_URL: postgresql://iougurt:iougurt@localhost:5432/iougurt_test?schema=public
+          JWT_SECRET: test-jwt-secret
+          NODE_ENV: test
+          VITEST_REAL_DB: 'true'
+        run: npm run test:real-db
 
       - name: Upload do relatório de Coverage
         uses: actions/upload-artifact@v4
