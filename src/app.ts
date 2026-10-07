@@ -26,95 +26,101 @@ import { serializerCompiler, validatorCompiler, jsonSchemaTransform } from 'fast
 import rateLimit from '@fastify/rate-limit'
 
 
-export const app = fastify({ logger: env.NODE_ENV === 'development' })
+export function createApp() {
+  const app = fastify({ logger: env.NODE_ENV === 'development' })
 
-// ── Zod Type Provider ────────────────────────────────
-app.setValidatorCompiler(validatorCompiler)
-app.setSerializerCompiler(serializerCompiler)
+  // ── Zod Type Provider ────────────────────────────────
+  app.setValidatorCompiler(validatorCompiler)
+  app.setSerializerCompiler(serializerCompiler)
 
-// ── Swagger / OpenAPI ─────────────────────────────────
-app.register(fastifySwagger, {
-  openapi: {
-    info: {
-      title: 'IOUGURT API',
-      description: 'API de Gestão Veterinária — MVP 3 (Completo)',
-      version: '3.0.0',
-    },
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
+  // ── Swagger / OpenAPI ─────────────────────────────────
+  app.register(fastifySwagger, {
+    openapi: {
+      info: {
+        title: 'IOUGURT API',
+        description: 'API de Gestão Veterinária — MVP 3 (Completo)',
+        version: '3.0.0',
+      },
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+          },
         },
       },
     },
-  },
-  transform: jsonSchemaTransform,
-})
+    transform: jsonSchemaTransform,
+  })
 
-app.register(fastifySwaggerUi, {
-  routePrefix: '/docs',
-})
+  app.register(fastifySwaggerUi, {
+    routePrefix: '/docs',
+  })
 
-// ── Plugins ───────────────────────────────────────────
-// Origens vêm de env (CORS_ORIGIN). Default '*' mantém o comportamento antigo
-// (libera todas, sem credenciais). Quando uma lista explícita é configurada,
-// passamos a refletir só essas origens e habilitamos credenciais — o wildcard
-// '*' é incompatível com Access-Control-Allow-Credentials nos navegadores.
-const corsOrigins = env.CORS_ORIGIN.split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean)
-const allowAllOrigins = corsOrigins.includes('*')
-app.register(fastifyCors, {
-  origin: allowAllOrigins ? '*' : corsOrigins,
-  credentials: !allowAllOrigins,
-})
+  // ── Plugins ───────────────────────────────────────────
+  // Origens vêm de env (CORS_ORIGIN). Default '*' mantém o comportamento antigo
+  // (libera todas, sem credenciais). Quando uma lista explícita é configurada,
+  // passamos a refletir só essas origens e habilitamos credenciais — o wildcard
+  // '*' é incompatível com Access-Control-Allow-Credentials nos navegadores.
+  const corsOrigins = env.CORS_ORIGIN.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+  const allowAllOrigins = corsOrigins.includes('*')
+  app.register(fastifyCors, {
+    origin: allowAllOrigins ? '*' : corsOrigins,
+    credentials: !allowAllOrigins,
+  })
 
-app.register(fastifyJwt, {
-  secret: env.JWT_SECRET,
-  sign: { expiresIn: env.JWT_EXPIRES_IN },
-  cookie: { cookieName: 'refreshToken', signed: false },
-})
+  app.register(fastifyJwt, {
+    secret: env.JWT_SECRET,
+    sign: { expiresIn: env.JWT_EXPIRES_IN },
+    cookie: { cookieName: 'refreshToken', signed: false },
+  })
 
-app.register(fastifyCookie)
+  app.register(fastifyCookie)
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+  const __filename = fileURLToPath(import.meta.url)
+  const __dirname = path.dirname(__filename)
 
-app.register(fastifyMultipart, {
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
-})
+  app.register(fastifyMultipart, {
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  })
 
-app.register(fastifyStatic, {
-  root: path.join(__dirname, '..', 'uploads'),
-  prefix: '/uploads/',
-  setHeaders(res) {
-    res.header('Content-Disposition', 'attachment')
-  },
-})
+  app.register(fastifyStatic, {
+    root: path.join(__dirname, '..', 'uploads'),
+    prefix: '/uploads/',
+    setHeaders(res) {
+      res.header('Content-Disposition', 'attachment')
+    },
+  })
 
-app.register(rateLimit, {
-  global: false, 
-})
+  app.register(rateLimit, {
+    global: false,
+  })
 
-// ── Health Check ─────────────────────────────────────
-app.get('/health', () => ({ status: 'ok' }))
+  // ── Health Check ─────────────────────────────────────
+  app.get('/health', () => ({ status: 'ok' }))
 
-// ── Routes ────────────────────────────────────────────
-app.register(authRoutes, { prefix: '/auth' })
-app.register(clinicRoutes, { prefix: '/clinics' })
-app.register(tutorRoutes, { prefix: '/tutors' })
-app.register(patientRoutes, { prefix: '/patients' })
-app.register(appointmentRoutes, { prefix: '/appointments' })
-app.register(clinicalRoutes, { prefix: '/clinical-records' })
-app.register(vaccinationRoutes, { prefix: '/vaccinations' })
-app.register(examRoutes, { prefix: '/exams' })
-app.register(dashboardRoutes, { prefix: '/dashboard' })
-app.register(portalRoutes, { prefix: '/portal' })
-app.register(testRoutes, { prefix: '/test' })
+  // ── Routes ────────────────────────────────────────────
+  app.register(authRoutes, { prefix: '/auth' })
+  app.register(clinicRoutes, { prefix: '/clinics' })
+  app.register(tutorRoutes, { prefix: '/tutors' })
+  app.register(patientRoutes, { prefix: '/patients' })
+  app.register(appointmentRoutes, { prefix: '/appointments' })
+  app.register(clinicalRoutes, { prefix: '/clinical-records' })
+  app.register(vaccinationRoutes, { prefix: '/vaccinations' })
+  app.register(examRoutes, { prefix: '/exams' })
+  app.register(dashboardRoutes, { prefix: '/dashboard' })
+  app.register(portalRoutes, { prefix: '/portal' })
+  app.register(testRoutes, { prefix: '/test' })
 
-// ── Error Handler ─────────────────────────────────────
-app.setErrorHandler(errorHandler)
+  // ── Error Handler ─────────────────────────────────────
+  app.setErrorHandler(errorHandler)
+
+  return app
+}
+
+export const app = createApp()
 
 export default app

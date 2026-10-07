@@ -1,22 +1,27 @@
 import { beforeAll, beforeEach, vi } from "vitest";
 import { mockDeep, mockReset } from "vitest-mock-extended";
-
 import type { PrismaClient } from "@prisma/client";
-import { prisma } from "@config/prisma";
 
-const useRealPrisma = process.env.VITEST_REAL_DB === "true";
+const { useRealPrisma } = vi.hoisted(() => ({
+  useRealPrisma: process.env.VITEST_REAL_DB === "true",
+}));
 
-beforeAll(() => {
-  vi.spyOn(console, "error").mockImplementation(() => undefined);
-  vi.spyOn(console, "warn").mockImplementation(() => undefined);
+vi.mock("@config/prisma", async () => {
+  if (useRealPrisma) {
+    return await vi.importActual<typeof import("@config/prisma")>("@config/prisma");
+  }
+
+  return {
+    prisma: mockDeep<PrismaClient>(),
+  };
 });
 
-if (!useRealPrisma) {
-  vi.mock("@config/prisma", () => ({
-    prisma: mockDeep<PrismaClient>(),
-  }));
+vi.mock("resend", () => {
+  if (useRealPrisma) {
+    return {};
+  }
 
-  vi.mock("resend", () => ({
+  return {
     Resend: vi.fn().mockImplementation(() => ({
       emails: {
         send: vi
@@ -24,9 +29,15 @@ if (!useRealPrisma) {
           .mockResolvedValue({ data: { id: "mail-id" }, error: null }),
       },
     })),
-  }));
+  };
+});
 
-  vi.mock("@google/generative-ai", () => ({
+vi.mock("@google/generative-ai", () => {
+  if (useRealPrisma) {
+    return {};
+  }
+
+  return {
     GoogleGenerativeAI: vi.fn().mockImplementation(() => ({
       getGenerativeModel: vi.fn().mockImplementation(() => ({
         generateContent: vi.fn().mockResolvedValue({
@@ -34,27 +45,38 @@ if (!useRealPrisma) {
         }),
       })),
     })),
-  }));
+  };
+});
 
-  vi.mock("google-auth-library", () => {
-    return {
-      OAuth2Client: vi.fn().mockImplementation(() => ({
-        getTokenInfo: vi.fn().mockResolvedValue({
-          email: "google-user@iougurt.com",
+vi.mock("google-auth-library", () => {
+  if (useRealPrisma) {
+    return {};
+  }
+
+  return {
+    OAuth2Client: vi.fn().mockImplementation(() => ({
+      getTokenInfo: vi.fn().mockResolvedValue({
+        email: "google-user@iougurt.com",
+        sub: "google-sub-123",
+      }),
+      verifyIdToken: vi.fn().mockResolvedValue({
+        getPayload: () => ({
           sub: "google-sub-123",
+          email: "google-user@iougurt.com",
+          email_verified: true,
+          name: "Google User",
         }),
-        verifyIdToken: vi.fn().mockResolvedValue({
-          getPayload: () => ({
-            sub: "google-sub-123",
-            email: "google-user@iougurt.com",
-            email_verified: true,
-            name: "Google User",
-          }),
-        }),
-      })),
-    };
-  });
-}
+      }),
+    })),
+  };
+});
+
+import { prisma } from "@config/prisma";
+
+beforeAll(() => {
+  vi.spyOn(console, "error").mockImplementation(() => undefined);
+  vi.spyOn(console, "warn").mockImplementation(() => undefined);
+});
 
 beforeEach(() => {
   if (useRealPrisma) return;
