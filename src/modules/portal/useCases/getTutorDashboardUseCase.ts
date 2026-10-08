@@ -27,7 +27,10 @@ export class GetTutorDashboardUseCase {
 
     // Últimos 3 agendamentos dos pets do tutor
     const recentAppointments = await prisma.appointment.findMany({
-      where: { patientId: { in: patientIds } },
+      where: {
+        patientId: { in: patientIds },
+        status: { in: ['SCHEDULED', 'IN_PROGRESS', 'COMPLETED'] },
+      },
       orderBy: { dateTime: 'desc' },
       take: 3,
       include: {

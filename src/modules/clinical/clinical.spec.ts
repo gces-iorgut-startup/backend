@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { InMemoryAppointmentsRepository } from '../schedule/repositories/in-memory/InMemoryAppointmentsRepository'
 import { InMemoryClinicalRecordsRepository } from './repositories/in-memory/InMemoryClinicalRecordsRepository'
+import { InMemoryUsersRepository } from '../auth/repositories/in-memory/InMemoryUsersRepository'
 import { StartClinicalRecordUseCase } from './useCases/startClinicalRecordUseCase'
 import { UpdateClinicalRecordUseCase } from './useCases/updateClinicalRecordUseCase'
 import { FinalizeClinicalRecordUseCase } from './useCases/finalizeClinicalRecordUseCase'
@@ -10,6 +11,7 @@ import { randomUUID } from 'crypto'
 describe('Clinical Records Module', () => {
   let appointmentsRepository: InMemoryAppointmentsRepository
   let clinicalRecordsRepository: InMemoryClinicalRecordsRepository
+  let usersRepository: InMemoryUsersRepository
   let startUseCase: StartClinicalRecordUseCase
   let updateUseCase: UpdateClinicalRecordUseCase
   let finalizeUseCase: FinalizeClinicalRecordUseCase
@@ -18,8 +20,13 @@ describe('Clinical Records Module', () => {
   beforeEach(() => {
     appointmentsRepository = new InMemoryAppointmentsRepository()
     clinicalRecordsRepository = new InMemoryClinicalRecordsRepository()
+    usersRepository = new InMemoryUsersRepository()
 
-    startUseCase = new StartClinicalRecordUseCase(appointmentsRepository, clinicalRecordsRepository)
+    startUseCase = new StartClinicalRecordUseCase(
+      appointmentsRepository,
+      clinicalRecordsRepository,
+      usersRepository
+    )
     updateUseCase = new UpdateClinicalRecordUseCase(clinicalRecordsRepository)
     finalizeUseCase = new FinalizeClinicalRecordUseCase(clinicalRecordsRepository, appointmentsRepository)
     historyUseCase = new GetPatientHistoryUseCase(clinicalRecordsRepository)
@@ -27,6 +34,14 @@ describe('Clinical Records Module', () => {
 
   it('should start a clinical record and change appointment status to IN_PROGRESS', async () => {
     const vetId = randomUUID()
+    await usersRepository.create({
+      email: 'vet@example.com',
+      passwordHash: 'hash',
+      name: 'Dr. Vet',
+      role: 'VET',
+      clinicId: 'clinic-1',
+      crmv: 'CRMV-123',
+    })
     const appointment = await appointmentsRepository.create({
       patientId: 'patient-1',
       vetId,
@@ -43,12 +58,53 @@ describe('Clinical Records Module', () => {
     expect(record.id).toBeDefined()
     expect(record.appointmentId).toBe(appointment.id)
     expect(record.patientId).toBe('patient-1')
+    expect(record.vetId).toBe(vetId)
 
     const updatedAppt = await appointmentsRepository.findById(appointment.id, 'clinic-1')
     expect(updatedAppt?.status).toBe('IN_PROGRESS')
   })
 
-  it('should not allow starting a record if not the assigned vet', async () => {
+  it('should allow OWNER with CRMV to start appointment of another vet in same clinic', async () => {
+    const originalVetId = randomUUID()
+    const owner = await usersRepository.create({
+      email: 'owner@example.com',
+      passwordHash: 'hash',
+      name: 'Dr. Dono',
+      role: 'OWNER',
+      clinicId: 'clinic-1',
+      crmv: 'CRMV-SP 99999',
+    })
+
+    const appointment = await appointmentsRepository.create({
+      patientId: 'patient-1',
+      vetId: originalVetId,
+      dateTime: new Date(),
+      category: 'OBSERVATION',
+    })
+
+    const record = await startUseCase.execute({
+      appointmentId: appointment.id,
+      vetId: owner.id,
+      clinicId: 'clinic-1',
+    })
+
+    expect(record.id).toBeDefined()
+    expect(record.vetId).toBe(owner.id)
+
+    const updatedAppt = await appointmentsRepository.findById(appointment.id, 'clinic-1')
+    expect(updatedAppt?.status).toBe('IN_PROGRESS')
+  })
+
+  it('should not allow OWNER without CRMV to start a clinical record', async () => {
+    const ownerWithoutCrmv = await usersRepository.create({
+      email: 'owner2@example.com',
+      passwordHash: 'hash',
+      name: 'Dono Sem CRMV',
+      role: 'OWNER',
+      clinicId: 'clinic-1',
+      crmv: null,
+    })
+
     const appointment = await appointmentsRepository.create({
       patientId: 'patient-1',
       vetId: randomUUID(),
@@ -56,11 +112,144 @@ describe('Clinical Records Module', () => {
       category: 'OBSERVATION',
     })
 
+    await expect(
+      startUseCase.execute({
+        appointmentId: appointment.id,
+        vetId: ownerWithoutCrmv.id,
+        clinicId: 'clinic-1',
+      })
+    ).rejects.toThrow('É necessário possuir CRMV cadastrado para iniciar o prontuário.')
+  })
+
+  it('should not allow OWNER of another clinic to start a clinical record', async () => {
+    const ownerOtherClinic = await usersRepository.create({
+      email: 'owner3@example.com',
+      passwordHash: 'hash',
+      name: 'Dono Outra Clinica',
+      role: 'OWNER',
+      clinicId: 'clinic-2',
+      crmv: 'CRMV-12345',
+    })
+
+    const appointment = await appointmentsRepository.create({
+      patientId: 'patient-1',
+      vetId: randomUUID(),
+      dateTime: new Date(),
+      category: 'OBSERVATION',
+    })
+
+    await expect(
+      startUseCase.execute({
+        appointmentId: appointment.id,
+        vetId: ownerOtherClinic.id,
+        clinicId: 'clinic-2',
+      })
+    ).rejects.toThrow('Agendamento não encontrado.')
+  })
+
+  it('should not allow starting a record if not the assigned vet', async () => {
+    const assignedVetId = randomUUID()
+    const otherVet = await usersRepository.create({
+      email: 'other-vet@example.com',
+      passwordHash: 'hash',
+      name: 'Outro Vet',
+      role: 'VET',
+      clinicId: 'clinic-1',
+      crmv: 'CRMV-888',
+    })
+
+    const appointment = await appointmentsRepository.create({
+      patientId: 'patient-1',
+      vetId: assignedVetId,
+      dateTime: new Date(),
+      category: 'OBSERVATION',
+    })
+
+    await expect(
+      startUseCase.execute({
+        appointmentId: appointment.id,
+        vetId: otherVet.id,
+        clinicId: 'clinic-1',
+      })
+    ).rejects.toThrow('Apenas o veterinário responsável pode iniciar o prontuário.')
+  })
+
+  it('should reject originally assigned VET from starting after OWNER already assumed and started the record', async () => {
+    const originalVet = await usersRepository.create({
+      email: 'original-vet@example.com',
+      passwordHash: 'hash',
+      name: 'Dr. Escalado',
+      role: 'VET',
+      clinicId: 'clinic-1',
+      crmv: 'CRMV-111',
+    })
+
+    const owner = await usersRepository.create({
+      email: 'owner@example.com',
+      passwordHash: 'hash',
+      name: 'Dr. Dono',
+      role: 'OWNER',
+      clinicId: 'clinic-1',
+      crmv: 'CRMV-999',
+    })
+
+    const appointment = await appointmentsRepository.create({
+      patientId: 'patient-1',
+      vetId: originalVet.id,
+      dateTime: new Date(),
+      category: 'OBSERVATION',
+    })
+
+    // OWNER inicia o prontuário primeiro
+    const record = await startUseCase.execute({
+      appointmentId: appointment.id,
+      vetId: owner.id,
+      clinicId: 'clinic-1',
+    })
+    expect(record.vetId).toBe(owner.id)
+
+    // VET original tenta iniciar a consulta depois
+    await expect(
+      startUseCase.execute({
+        appointmentId: appointment.id,
+        vetId: originalVet.id,
+        clinicId: 'clinic-1',
+      })
+    ).rejects.toThrow('Apenas o veterinário responsável pode iniciar o prontuário.')
+  })
+
+  it('should not allow starting a record if appointment status is PENDING_APPROVAL', async () => {
+    const vetId = randomUUID()
+    const appointment = await appointmentsRepository.create({
+      patientId: 'patient-1',
+      vetId,
+      dateTime: new Date(),
+      category: 'OBSERVATION',
+    })
+    await appointmentsRepository.updateStatus(appointment.id, 'PENDING_APPROVAL')
+
     await expect(startUseCase.execute({
       appointmentId: appointment.id,
-      vetId: randomUUID(), // different vet
+      vetId,
       clinicId: 'clinic-1',
-    })).rejects.toThrow('Apenas o veterinário responsável')
+    })).rejects.toThrow('Apenas agendamentos agendados ou em andamento podem ter prontuário iniciado.')
+  })
+
+  it('should not allow starting a record if appointment status is REJECTED', async () => {
+    const vetId = randomUUID()
+    const appointment = await appointmentsRepository.create({
+      patientId: 'patient-1',
+      vetId,
+      dateTime: new Date(),
+      category: 'OBSERVATION',
+    })
+    await appointmentsRepository.updateStatus(appointment.id, 'REJECTED')
+
+    await expect(startUseCase.execute({
+      appointmentId: appointment.id,
+      vetId,
+      clinicId: 'clinic-1',
+    })).rejects.toThrow('Apenas agendamentos agendados ou em andamento podem ter prontuário iniciado.')
   })
 
   it('should update clinical record notes and weight', async () => {
@@ -129,7 +318,7 @@ describe('Clinical Records Module', () => {
       patientId: 'patient-1',
       vetId,
       dateTime: new Date('2099-01-01T08:00:00.000Z'),
-      endDateTime: scheduledEnd, // agendamento com horário marcado (8h-8h15)
+      endDateTime: scheduledEnd,
       category: 'OBSERVATION',
     })
 
@@ -139,7 +328,6 @@ describe('Clinical Records Module', () => {
       clinicId: 'clinic-1',
     })
 
-    // Finaliza muito depois do horário marcado (ex.: às 19h).
     await finalizeUseCase.execute({
       recordId: record.id,
       vetId,
@@ -149,7 +337,6 @@ describe('Clinical Records Module', () => {
 
     const appt = await appointmentsRepository.findById(appointment.id, 'clinic-1')
     expect(appt?.status).toBe('COMPLETED')
-    // O fim deve permanecer o horário agendado, não o horário de finalização.
     expect(appt?.endDateTime?.toISOString()).toBe(scheduledEnd.toISOString())
   })
 
@@ -170,12 +357,14 @@ describe('Clinical Records Module', () => {
 
     await finalizeUseCase.execute({ recordId: record.id, vetId, clinicId: 'clinic-1' })
 
-    await expect(updateUseCase.execute({
-      recordId: record.id,
-      vetId,
-      clinicId: 'clinic-1',
-      data: { weightKg: 15 },
-    })).rejects.toThrow('Não é possível editar um prontuário finalizado')
+    await expect(
+      updateUseCase.execute({
+        recordId: record.id,
+        vetId,
+        clinicId: 'clinic-1',
+        data: { weightKg: 15 },
+      })
+    ).rejects.toThrow('Não é possível editar um prontuário finalizado')
   })
 
   it('should fetch patient clinical history', async () => {

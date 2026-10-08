@@ -17,7 +17,7 @@ export class ResetPasswordUseCase {
   async execute({ token, newPassword }: { token: string, newPassword: string }): Promise<void> {
     const storedToken = await this.passwordTokensRepository.findByToken(token)
 
-    if (!storedToken || storedToken.usedAt || storedToken.expiresAt < new Date()) {
+    if (!storedToken || storedToken.usedAt || storedToken.expiresAt <= new Date()) {
       throw Errors.unauthorized('Token inválido, expirado ou já utilizado')
     }
 
@@ -40,9 +40,13 @@ export class ResetPasswordUseCase {
     }
 
     const passwordHash = await this.hashProvider.hash(newPassword)
-    
+
+    const claimed = await this.passwordTokensRepository.markAsUsed(token)
+    if (!claimed) {
+      throw Errors.unauthorized('Token inválido, expirado ou já utilizado')
+    }
+
     await this.usersRepository.updatePassword(storedToken.userId, passwordHash)
     await this.refreshTokensRepository.deleteAllByUserId(storedToken.userId)
-    await this.passwordTokensRepository.markAsUsed(token)
   }
 }

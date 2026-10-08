@@ -5,6 +5,8 @@ import { listTutorsController, listTutorsQuerySchema } from './controllers/listT
 import { getTutorController, getTutorParamsSchema } from './controllers/getTutorController'
 import { updateTutorController, updateTutorBodySchema } from './controllers/updateTutorController'
 import { createTutorAccountController, createTutorAccountParamsSchema, createTutorAccountBodySchema } from './controllers/createTutorAccountController'
+import { resendInviteController, resendInviteParamsSchema } from './controllers/resendInviteController'
+import { deleteTutorController } from './controllers/deleteTutorController'
 
 export const tutorRoutes: FastifyPluginAsyncZod = async (app) => {
   app.addHook('preHandler', verifyJwt)
@@ -49,10 +51,28 @@ export const tutorRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post('/:id/account', {
     schema: {
       tags: ['Tutors'],
-      summary: 'Criar conta de acesso ao portal para o tutor (gera senha temporária)',
+      summary: 'Criar conta de acesso ao portal para o tutor (envia convite por e-mail)',
       security: [{ bearerAuth: [] }],
       params: createTutorAccountParamsSchema,
       body: createTutorAccountBodySchema,
     },
   }, createTutorAccountController)
+
+  app.post('/:id/resend-invite', {
+    schema: {
+      tags: ['Tutors'],
+      summary: 'Reenviar convite de primeiro acesso ao tutor',
+      security: [{ bearerAuth: [] }],
+      params: resendInviteParamsSchema,
+    },
+  }, resendInviteController)
+
+  app.delete('/:id', {
+    schema: {
+      tags: ['Tutors'],
+      summary: 'Excluir tutor logicamente (Soft Delete)',
+      security: [{ bearerAuth: [] }],
+      params: getTutorParamsSchema,
+    },
+  }, deleteTutorController)
 }

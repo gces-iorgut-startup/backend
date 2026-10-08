@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { TestApp } from '../../utils/app-builder'
 import { Factory } from '../../utils/factories'
-import { HTTP, SEED } from '../../utils/constants'
+import { HTTP, ROLE, SEED } from '../../utils/constants'
 import { prismaMock } from '../../setup'
 
 describe('Clinical record routes', () => {
@@ -12,6 +12,7 @@ describe('Clinical record routes', () => {
 
   describe('POST /clinical-records', () => {
     it('inicia prontuário a partir de agendamento SCHEDULED', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(Factory.owner() as never)
       prismaMock.appointment.findFirst.mockResolvedValue(Factory.appointment() as never)
       prismaMock.clinicalRecord.findUnique.mockResolvedValue(null)
       prismaMock.clinicalRecord.create.mockResolvedValue(Factory.clinicalRecord() as never)
@@ -29,7 +30,36 @@ describe('Clinical record routes', () => {
       expect(response.json().id).toBe(SEED.RECORD_ID)
     })
 
+    it('inicia prontuário como OWNER com CRMV para agendamento de outro veterinário', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(
+        Factory.owner({ id: SEED.OWNER_ID, crmv: 'CRMV-SP 12345' }) as never,
+      )
+      prismaMock.appointment.findFirst.mockResolvedValue(
+        Factory.appointment({ vetId: SEED.VET_ID }) as never,
+      )
+      prismaMock.clinicalRecord.findUnique.mockResolvedValue(null)
+      prismaMock.clinicalRecord.create.mockResolvedValue(
+        Factory.clinicalRecord({ vetId: SEED.OWNER_ID }) as never,
+      )
+      prismaMock.appointment.update.mockResolvedValue(
+        Factory.appointment({ status: 'IN_PROGRESS' }) as never,
+      )
+
+      const response = await app.injectAuth(
+        {
+          method: 'POST',
+          url: '/clinical-records',
+          payload: { appointmentId: SEED.APPOINTMENT_ID },
+        },
+        { userId: SEED.OWNER_ID, role: ROLE.OWNER }
+      )
+
+      expect(response.statusCode).toBe(HTTP.CREATED)
+      expect(response.json().vetId).toBe(SEED.OWNER_ID)
+    })
+
     it('reutiliza prontuário existente do agendamento', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(Factory.owner() as never)
       prismaMock.appointment.findFirst.mockResolvedValue(
         Factory.appointment({ status: 'IN_PROGRESS' }) as never,
       )
@@ -47,9 +77,12 @@ describe('Clinical record routes', () => {
     it.each([
       { status: 'COMPLETED', code: HTTP.BAD_REQUEST },
       { status: 'CANCELLED', code: HTTP.BAD_REQUEST },
+      { status: 'PENDING_APPROVAL', code: HTTP.BAD_REQUEST },
+      { status: 'REJECTED', code: HTTP.BAD_REQUEST },
     ] as const)(
       'rejeita quando agendamento está $status',
       async ({ status, code }) => {
+        prismaMock.user.findUnique.mockResolvedValue(Factory.owner() as never)
         prismaMock.appointment.findFirst.mockResolvedValue(
           Factory.appointment({ status }) as never,
         )
@@ -64,15 +97,82 @@ describe('Clinical record routes', () => {
       },
     )
 
-    it('retorna 403 quando vet do token não é o responsável', async () => {
+    it('rejeita com 403 quando OWNER não possui CRMV cadastrado', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(
+        Factory.owner({ id: SEED.OWNER_ID, crmv: null }) as never,
+      )
       prismaMock.appointment.findFirst.mockResolvedValue(
         Factory.appointment({ vetId: SEED.VET_ID }) as never,
       )
-      const response = await app.injectAuth({
-        method: 'POST',
-        url: '/clinical-records',
-        payload: { appointmentId: SEED.APPOINTMENT_ID },
-      })
+
+      const response = await app.injectAuth(
+        {
+          method: 'POST',
+          url: '/clinical-records',
+          payload: { appointmentId: SEED.APPOINTMENT_ID },
+        },
+        { userId: SEED.OWNER_ID, role: ROLE.OWNER }
+      )
+
+      expect(response.statusCode).toBe(HTTP.FORBIDDEN)
+    })
+
+    it('retorna 403 quando vet do token não é o responsável', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(
+        Factory.vet({ id: 'other-vet-id' }) as never,
+      )
+      prismaMock.appointment.findFirst.mockResolvedValue(
+        Factory.appointment({ vetId: SEED.VET_ID }) as never,
+      )
+      const response = await app.injectAuth(
+        {
+          method: 'POST',
+          url: '/clinical-records',
+          payload: { appointmentId: SEED.APPOINTMENT_ID },
+        },
+        { userId: 'other-vet-id', role: ROLE.VET }
+      )
+      expect(response.statusCode).toBe(HTTP.FORBIDDEN)
+    })
+
+    it('retorna 403 quando TUTOR tenta iniciar prontuário', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(
+        Factory.tutorUser({ id: SEED.TUTOR_USER_ID }) as never,
+      )
+      prismaMock.appointment.findFirst.mockResolvedValue(
+        Factory.appointment() as never,
+      )
+      const response = await app.injectAuth(
+        {
+          method: 'POST',
+          url: '/clinical-records',
+          payload: { appointmentId: SEED.APPOINTMENT_ID },
+        },
+        { userId: SEED.TUTOR_USER_ID, role: ROLE.TUTOR }
+      )
+      expect(response.statusCode).toBe(HTTP.FORBIDDEN)
+    })
+
+    it('retorna 403 quando VET originalmente agendado tenta iniciar após OWNER já ter iniciado', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(
+        Factory.vet({ id: SEED.VET_ID }) as never,
+      )
+      prismaMock.appointment.findFirst.mockResolvedValue(
+        Factory.appointment({ vetId: SEED.VET_ID }) as never,
+      )
+      prismaMock.clinicalRecord.findUnique.mockResolvedValue(
+        Factory.clinicalRecord({ vetId: SEED.OWNER_ID }) as never,
+      )
+
+      const response = await app.injectAuth(
+        {
+          method: 'POST',
+          url: '/clinical-records',
+          payload: { appointmentId: SEED.APPOINTMENT_ID },
+        },
+        { userId: SEED.VET_ID, role: ROLE.VET }
+      )
+
       expect(response.statusCode).toBe(HTTP.FORBIDDEN)
     })
 
@@ -202,6 +302,127 @@ describe('Clinical record routes', () => {
 
       expect(response.statusCode).toBe(HTTP.OK)
       expect(response.headers['content-type']).toContain('application/pdf')
+    })
+
+    it('permite emissão quando perfil é VET autor do prontuário', async () => {
+      prismaMock.clinicalRecord.findUnique.mockResolvedValue({
+        ...Factory.clinicalRecord({
+          finalized: true,
+          vetId: SEED.VET_ID,
+          prescriptions: 'Amoxicilina 250mg',
+        }),
+        patient: { ...Factory.patient(), tutor: Factory.tutor(), clinic: Factory.clinic() },
+        vet: Factory.vet(),
+      } as never)
+
+      const response = await app.injectAuth(
+        {
+          method: 'GET',
+          url: `/clinical-records/${SEED.RECORD_ID}/prescription`,
+        },
+        { role: ROLE.VET, userId: SEED.VET_ID },
+      )
+
+      expect(response.statusCode).toBe(HTTP.OK)
+      expect(response.headers['content-type']).toContain('application/pdf')
+    })
+
+    it('rejeita com 403 quando perfil é VET mas não é o autor', async () => {
+      prismaMock.clinicalRecord.findUnique.mockResolvedValue({
+        ...Factory.clinicalRecord({
+          finalized: true,
+          vetId: SEED.VET_ID,
+          prescriptions: 'Amoxicilina 250mg',
+        }),
+        patient: { ...Factory.patient(), tutor: Factory.tutor(), clinic: Factory.clinic() },
+        vet: Factory.vet(),
+      } as never)
+
+      const response = await app.injectAuth(
+        {
+          method: 'GET',
+          url: `/clinical-records/${SEED.RECORD_ID}/prescription`,
+        },
+        { role: ROLE.VET, userId: 'outro-vet-id' },
+      )
+
+      expect(response.statusCode).toBe(HTTP.FORBIDDEN)
+    })
+
+    it('permite emissão quando perfil é TUTOR dono do paciente', async () => {
+      prismaMock.clinicalRecord.findUnique.mockResolvedValue({
+        ...Factory.clinicalRecord({
+          finalized: true,
+          prescriptions: 'Amoxicilina 250mg',
+        }),
+        patient: {
+          ...Factory.patient(),
+          tutor: Factory.tutor({ userId: SEED.TUTOR_USER_ID }),
+          clinic: Factory.clinic(),
+        },
+        vet: Factory.owner(),
+      } as never)
+
+      const response = await app.injectAuth(
+        {
+          method: 'GET',
+          url: `/clinical-records/${SEED.RECORD_ID}/prescription`,
+        },
+        { role: ROLE.TUTOR, userId: SEED.TUTOR_USER_ID },
+      )
+
+      expect(response.statusCode).toBe(HTTP.OK)
+      expect(response.headers['content-type']).toContain('application/pdf')
+    })
+
+    it('rejeita com 403 quando perfil é TUTOR mas não é dono do paciente', async () => {
+      prismaMock.clinicalRecord.findUnique.mockResolvedValue({
+        ...Factory.clinicalRecord({
+          finalized: true,
+          prescriptions: 'Amoxicilina 250mg',
+        }),
+        patient: {
+          ...Factory.patient(),
+          tutor: Factory.tutor({ userId: SEED.TUTOR_USER_ID }),
+          clinic: Factory.clinic(),
+        },
+        vet: Factory.owner(),
+      } as never)
+
+      const response = await app.injectAuth(
+        {
+          method: 'GET',
+          url: `/clinical-records/${SEED.RECORD_ID}/prescription`,
+        },
+        { role: ROLE.TUTOR, userId: 'outro-tutor-user-id' },
+      )
+
+      expect(response.statusCode).toBe(HTTP.FORBIDDEN)
+    })
+
+    it('rejeita com 404 quando prontuário pertence a outra clínica', async () => {
+      prismaMock.clinicalRecord.findUnique.mockResolvedValue({
+        ...Factory.clinicalRecord({
+          finalized: true,
+          prescriptions: 'Amoxicilina 250mg',
+        }),
+        patient: {
+          ...Factory.patient({ clinicId: 'outra-clinica-id' }),
+          tutor: Factory.tutor({ userId: SEED.TUTOR_USER_ID }),
+          clinic: Factory.clinic({ id: 'outra-clinica-id' }),
+        },
+        vet: Factory.owner(),
+      } as never)
+
+      const response = await app.injectAuth(
+        {
+          method: 'GET',
+          url: `/clinical-records/${SEED.RECORD_ID}/prescription`,
+        },
+        { clinicId: SEED.CLINIC_ID },
+      )
+
+      expect(response.statusCode).toBe(HTTP.NOT_FOUND)
     })
   })
 })
