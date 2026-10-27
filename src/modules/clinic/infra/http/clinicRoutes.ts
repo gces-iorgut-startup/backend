@@ -9,6 +9,7 @@ import { Errors } from '../../../../core/errors'
 const clinicSelect = {
   id: true,
   name: true,
+  code: true,
   cnpj: true,
   address: true,
   phone: true,
