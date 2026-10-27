@@ -12,6 +12,7 @@ datasource db {
 model Clinic {
   id        String   @id @default(uuid())
   name      String
+  code      String   @unique
   cnpj      String?  // documento oficial (US10 — cabeçalho da receita)
   address   String?  // endereço completo (US10)
   phone     String?  // telefone de contato (US10)
