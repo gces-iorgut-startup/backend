@@ -154,6 +154,7 @@ model Appointment {
   status       AppointmentStatus   @default(SCHEDULED)
   observation  String?
   cancelReason String?             @map("cancel_reason") // US08
+  reminderSentAt DateTime?         @map("reminder_sent_at")
   createdAt    DateTime            @default(now()) @map("created_at")
   updatedAt    DateTime            @updatedAt @map("updated_at")
 
@@ -162,6 +163,7 @@ model Appointment {
   clinicalRecord ClinicalRecord?
 
   @@index([vetId, dateTime])
+  @@index([status, dateTime, reminderSentAt])
   @@map("appointments")
 }
 
