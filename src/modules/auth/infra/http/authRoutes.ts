@@ -24,14 +24,12 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   }, registerOwnerController)
 
-  // Registro de VET (apenas OWNER pode criar VETs na sua clínica)
+  // Registro público de VET (autocadastro vinculado à clínica pelo código)
   app.post('/register/vet', {
-    preHandler: [verifyJwt, verifyRole('OWNER')],
     schema: {
       tags: ['Auth'],
-      summary: 'Criar conta de Veterinário (apenas OWNER)',
+      summary: 'Criar conta de Médico Veterinário vinculado por código de clínica',
       body: registerVetBodySchema,
-      security: [{ bearerAuth: [] }],
     },
   }, registerVetController)
 
