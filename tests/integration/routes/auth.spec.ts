@@ -156,13 +156,20 @@ describe('Auth routes', () => {
       email: 'vet.novo@iougurt.com',
       password: FAKE.PASSWORD,
       crmv: 'CRMV-9999',
+      clinicCode: 'IOUGURT-7A2',
     }
 
-    it('cria VET quando chamado por OWNER', async () => {
+    it('cria VET publicamente com sucesso quando código é válido e clínica tem OWNER', async () => {
       prismaMock.user.findUnique.mockResolvedValue(null)
+      prismaMock.clinic.findUnique.mockResolvedValue({
+        id: SEED.CLINIC_ID,
+        name: 'Clínica IOUGURT',
+        code: 'IOUGURT-7A2',
+        users: [{ id: SEED.OWNER_ID }],
+      } as never)
       prismaMock.user.create.mockResolvedValue(Factory.vet() as never)
 
-      const response = await app.injectAuth({
+      const response = await app.inject({
         method: 'POST',
         url: '/auth/register/vet',
         payload: VET_PAYLOAD,
@@ -172,12 +179,60 @@ describe('Auth routes', () => {
       expect(response.json().user.role).toBe(ROLE.VET)
     })
 
-    it.each([ROLE.VET, ROLE.TUTOR])('rejeita role %s com 403', async (role) => {
-      const response = await app.injectAuth(
-        { method: 'POST', url: '/auth/register/vet', payload: VET_PAYLOAD },
-        { role },
-      )
-      expect(response.statusCode).toBe(HTTP.FORBIDDEN)
+    it('retorna 404 quando o código da clínica não existe', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(null)
+      prismaMock.clinic.findUnique.mockResolvedValue(null)
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/auth/register/vet',
+        payload: { ...VET_PAYLOAD, clinicCode: 'INVALID-999' },
+      })
+
+      expect(response.statusCode).toBe(HTTP.NOT_FOUND)
+    })
+
+    it('retorna 400 quando a clínica existe mas não possui OWNER ativo', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(null)
+      prismaMock.clinic.findUnique.mockResolvedValue({
+        id: SEED.CLINIC_ID,
+        name: 'Clínica IOUGURT',
+        code: 'IOUGURT-7A2',
+        users: [],
+      } as never)
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/auth/register/vet',
+        payload: VET_PAYLOAD,
+      })
+
+      expect(response.statusCode).toBe(HTTP.BAD_REQUEST)
+    })
+
+    it('retorna 409 quando o e-mail já existe', async () => {
+      prismaMock.user.count.mockResolvedValue(1)
+      prismaMock.user.findUnique.mockResolvedValue(Factory.vet() as never)
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/auth/register/vet',
+        payload: VET_PAYLOAD,
+      })
+
+      expect(response.statusCode).toBe(HTTP.CONFLICT)
+    })
+
+    it('rejeita requisição sem crmv com erro 422 de validação Zod', async () => {
+      const { crmv, ...withoutCrmv } = VET_PAYLOAD
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/auth/register/vet',
+        payload: withoutCrmv,
+      })
+
+      expect(response.statusCode).toBe(HTTP.UNPROCESSABLE)
     })
   })
 
