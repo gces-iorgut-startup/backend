@@ -12,6 +12,9 @@ const envSchema = z.object({
   // Com o frontend servido pelo mesmo domínio (via proxy nginx), as chamadas
   // são same-origin e o CORS nem é exercido — isto é uma rede de segurança.
   CORS_ORIGIN: z.string().default('*'),
+  // SameSite dos cookies de sessão. 'lax' serve quando o frontend é same-site (proxy);
+  // use 'none' (exige HTTPS) só se o frontend estiver em outro site.
+  COOKIE_SAME_SITE: z.enum(['lax', 'strict', 'none']).default('lax'),
   PASSWORD_RESET_SECRET: z.string().default(''),
   JWT_EXPIRES_IN: z.string().default('30m'),
   REFRESH_TOKEN_EXPIRES_IN: z.string().default('7d'),
