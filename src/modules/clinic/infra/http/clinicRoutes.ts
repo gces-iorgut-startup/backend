@@ -58,7 +58,7 @@ export const clinicRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
   }, async (request, reply) => {
-    const { code } = request.params
+    const { code } = request.params as z.infer<typeof getClinicByCodeParamsSchema>
     const useCase = new GetClinicByCodeUseCase()
     const clinic = await useCase.execute(code)
     return reply.status(200).send({ clinic })
