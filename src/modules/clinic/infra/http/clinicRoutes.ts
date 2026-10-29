@@ -1,4 +1,5 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
+import '@fastify/rate-limit'
 import { z } from 'zod'
 import { prisma } from '@config/prisma'
 import { verifyJwt } from '@shared/middleware/verify-jwt'
@@ -21,6 +22,10 @@ const clinicSelect = {
 export const getClinicByCodeParamsSchema = z.object({
   code: z.string().trim().min(3, 'Código deve ter no mínimo 3 caracteres').max(20, 'Código inválido'),
 })
+
+// Rota pública: limita tentativas por IP para impedir a descoberta de siglas por força bruta.
+// O limite comporta a validação em tempo real do frontend (debounce enquanto o usuário digita).
+export const clinicCodeRateLimit = { max: 30, timeWindow: '1 minute' }
 
 export const getClinicByCodeResponseSchema = z.object({
   clinic: z.object({
@@ -49,6 +54,7 @@ const updateClinicBodySchema = z.object({
 export const clinicRoutes: FastifyPluginAsyncZod = async (app) => {
   // ── Rota Pública de Validação de Código ──────────────
   app.get('/code/:code', {
+    config: { rateLimit: clinicCodeRateLimit },
     schema: {
       tags: ['Clinic'],
       summary: 'Valida se uma clínica existe e possui um Dono (OWNER) ativo através da sigla',

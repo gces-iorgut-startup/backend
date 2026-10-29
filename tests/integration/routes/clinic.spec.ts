@@ -3,6 +3,7 @@ import { TestApp } from '../../utils/app-builder'
 import { Factory } from '../../utils/factories'
 import { HTTP, ROLE, SEED, FAKE } from '../../utils/constants'
 import { prismaMock } from '../../setup'
+import { clinicCodeRateLimit } from '../../../src/modules/clinic/infra/http/clinicRoutes'
 
 describe('Clinic routes', () => {
   let app: TestApp
@@ -156,6 +157,24 @@ describe('Clinic routes', () => {
       })
 
       expect(response.statusCode).toBe(HTTP.UNPROCESSABLE)
+    })
+
+    it('retorna 429 quando o limite de consultas por IP é excedido', async () => {
+      // App isolado para não consumir o limite compartilhado pelos demais testes
+      const isolated = await TestApp.build()
+      prismaMock.clinic.findUnique.mockResolvedValue(null)
+
+      try {
+        for (let i = 0; i < clinicCodeRateLimit.max; i++) {
+          const response = await isolated.inject({ method: 'GET', url: `/clinics/code/TENTATIVA-${i}` })
+          expect(response.statusCode).toBe(HTTP.NOT_FOUND)
+        }
+
+        const blocked = await isolated.inject({ method: 'GET', url: '/clinics/code/TENTATIVA-X' })
+        expect(blocked.statusCode).toBe(HTTP.TOO_MANY_REQUESTS)
+      } finally {
+        await isolated.close()
+      }
     })
   })
 })
