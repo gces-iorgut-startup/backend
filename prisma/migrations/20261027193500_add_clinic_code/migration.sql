@@ -3,7 +3,7 @@ ALTER TABLE "clinics" ADD COLUMN "code" TEXT;
 
 -- Backfill existing clinics without code with unique fallback
 UPDATE "clinics"
-SET "code" = CONCAT('CLINIC-', UPPER(SUBSTRING(REPLACE(id::text, '-', ''), 1, 4)))
+SET "code" = CONCAT('CLINIC-', UPPER(SUBSTRING(REPLACE(id::text, '-', ''), 1, 8)))
 WHERE "code" IS NULL;
 
 -- AlterTable

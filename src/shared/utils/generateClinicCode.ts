@@ -1,15 +1,19 @@
 import crypto from 'crypto'
 
+// 5 caracteres em alfabeto de 32 símbolos → ~33,5 milhões de combinações por prefixo,
+// o que inviabiliza descobrir a sigla por tentativa e erro na rota pública.
+const SUFFIX_LENGTH = 5
+
 /**
  * Gera uma sigla amigável e única para a clínica baseada em seu nome.
- * Formato gerado: [PREFIXO]-[SUFIXO], ex: "PETLIFE-7A2", "SAOJOSE-8K3".
+ * Formato gerado: [PREFIXO]-[SUFIXO], ex: "PETLIFE-7A2K9", "SAOJOSE-8K3WM".
  *
  * @param clinicName Nome da clínica
  * @returns Sigla normalizada em caixa alta com sufixo aleatório
  */
 export function generateClinicCode(clinicName: string): string {
   if (!clinicName || typeof clinicName !== 'string') {
-    return `CLINIC-${generateRandomSuffix(3)}`
+    return `CLINIC-${generateRandomSuffix(SUFFIX_LENGTH)}`
   }
 
   // 1. Remove acentos e converte para maiúsculo
@@ -48,7 +52,7 @@ export function generateClinicCode(clinicName: string): string {
     prefix = prefix.padEnd(3, 'X')
   }
 
-  const suffix = generateRandomSuffix(3)
+  const suffix = generateRandomSuffix(SUFFIX_LENGTH)
   return `${prefix}-${suffix}`
 }
 
