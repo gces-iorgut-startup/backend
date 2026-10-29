@@ -14,6 +14,9 @@ import { setPasswordController, setPasswordBodySchema } from './controllers/setP
 import { verifyJwt } from '@shared/middleware/verify-jwt'
 import { verifyRole } from '@shared/middleware/verify-role'
 
+// Rota pública: limita tentativas por IP para impedir varrer siglas de clínica via cadastro
+export const vetRegisterRateLimit = { max: 10, timeWindow: '15 minutes' }
+
 export const authRoutes: FastifyPluginAsyncZod = async (app) => {
   // Registro de OWNER (cria clínica automaticamente)
   app.post('/register', {
@@ -26,6 +29,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
 
   // Registro público de VET (autocadastro vinculado à clínica pelo código)
   app.post('/register/vet', {
+    config: { rateLimit: vetRegisterRateLimit },
     schema: {
       tags: ['Auth'],
       summary: 'Criar conta de Médico Veterinário vinculado por código de clínica',

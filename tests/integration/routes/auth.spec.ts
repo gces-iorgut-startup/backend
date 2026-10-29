@@ -4,6 +4,7 @@ import { TestApp } from '../../utils/app-builder'
 import { Factory } from '../../utils/factories'
 import { FAKE, HTTP, ROLE, SEED } from '../../utils/constants'
 import { prismaMock } from '../../setup'
+import { vetRegisterRateLimit } from '../../../src/modules/auth/infra/http/authRoutes'
 
 const REGISTER_OWNER_PAYLOAD = {
   name: 'Dr. Dono',
@@ -233,6 +234,33 @@ describe('Auth routes', () => {
       })
 
       expect(response.statusCode).toBe(HTTP.UNPROCESSABLE)
+    })
+
+    it('retorna 429 quando o limite de cadastros por IP é excedido', async () => {
+      // App isolado para não consumir o limite compartilhado pelos demais testes
+      const isolated = await TestApp.build()
+      prismaMock.user.findUnique.mockResolvedValue(null)
+      prismaMock.clinic.findUnique.mockResolvedValue(null)
+
+      try {
+        for (let i = 0; i < vetRegisterRateLimit.max; i++) {
+          const response = await isolated.inject({
+            method: 'POST',
+            url: '/auth/register/vet',
+            payload: { ...VET_PAYLOAD, clinicCode: `TENTATIVA-${i}` },
+          })
+          expect(response.statusCode).toBe(HTTP.NOT_FOUND)
+        }
+
+        const blocked = await isolated.inject({
+          method: 'POST',
+          url: '/auth/register/vet',
+          payload: VET_PAYLOAD,
+        })
+        expect(blocked.statusCode).toBe(HTTP.TOO_MANY_REQUESTS)
+      } finally {
+        await isolated.close()
+      }
     })
   })
 
