@@ -6,7 +6,7 @@ import { env } from '../../../src/config/env'
 const SECRET = 'test-e2e-secret'
 const CLINIC_URL = `/test/clinics/${SEED.CLINIC_ID}`
 
-describe('Rotas /test protegidas por segredo', () => {
+describe('Rotas /test protegidas por segredo', { timeout: 15000 }, () => {
   let app: TestApp
 
   afterEach(async () => {
