@@ -158,6 +158,20 @@ export class Factory {
     }
   }
 
+  static chronicCondition(overrides: Overrides<Record<string, unknown>> = {}) {
+    return {
+      id: SEED.CHRONIC_CONDITION_ID,
+      patientId: SEED.PATIENT_ID,
+      name: 'Diabetes mellitus',
+      diagnosedAt: NOW,
+      status: 'ACTIVE',
+      observations: null,
+      createdAt: NOW,
+      updatedAt: NOW,
+      ...overrides,
+    }
+  }
+
   static refreshToken(overrides: Overrides<Record<string, unknown>> = {}) {
     return {
       id: 'refresh-1',
