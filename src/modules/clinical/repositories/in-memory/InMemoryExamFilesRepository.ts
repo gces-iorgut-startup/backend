@@ -12,6 +12,7 @@ export class InMemoryExamFilesRepository implements IExamFilesRepository {
       fileName: data.fileName,
       fileUrl: data.fileUrl,
       fileType: data.fileType,
+      clinicalType: null,
       uploadedAt: new Date(),
     }
     this.items.push(file)

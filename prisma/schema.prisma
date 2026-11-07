@@ -139,6 +139,8 @@ model Patient {
   clinicalRecords ClinicalRecord[]
   vaccinations    Vaccination[]    // US11 — aba "Controle Imunológico"
   examFiles       ExamFile[]       // US12 — exames anexados
+  chronicConditions ChronicCondition[] // CLI-02 — Patologias crônicas
+  photos          PatientPhoto[]   // CLI-05 — Galeria de fotos do paciente
 
   @@map("patients")
 }
@@ -199,6 +201,7 @@ model ClinicalRecord {
   breathingNotes   String?  @map("breathing_notes")             // US09
   routineGuidance  String?  @map("routine_guidance")  @db.Text  // US09
   aiSummary        String?  @map("ai_summary")        @db.Text  // US13
+  observations     String?  @db.Text                            // CLI-01 — observações gerais do atendimento
   finalized        Boolean  @default(false)                     // US09, US10
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
@@ -219,6 +222,8 @@ model Vaccination {
   vaccineName String            @map("vaccine_name")
   appliedAt   DateTime?         @map("applied_at")
   nextDoseAt  DateTime?         @map("next_dose_at") // aviso pendência (US11, US15)
+  doseNumber  Int?              @map("dose_number")   // CLI-06 — número da dose
+  intervalDays Int?             @map("interval_days") // CLI-06 — intervalo em dias para próxima dose
   status      VaccinationStatus @default(PENDING)
   createdAt   DateTime          @default(now()) @map("created_at")
 
@@ -242,10 +247,43 @@ model ExamFile {
   fileName         String   @map("file_name")
   fileUrl          String   @map("file_url") // path local em dev
   fileType         String   @map("file_type") // "pdf" | "image"
+  clinicalType     String?  @map("clinical_type") // CLI-03 — tipo clínico do exame
   uploadedAt       DateTime @default(now()) @map("uploaded_at")
 
   patient        Patient         @relation(fields: [patientId], references: [id])
   clinicalRecord ClinicalRecord? @relation(fields: [clinicalRecordId], references: [id])
 
   @@map("exam_files")
+}
+
+// ── Chronic Conditions (CLI-02) ──────────────────────
+
+model ChronicCondition {
+  id           String    @id @default(uuid())
+  patientId    String    @map("patient_id")
+  name         String
+  diagnosedAt  DateTime? @map("diagnosed_at")
+  status       String    @default("ACTIVE") // ACTIVE | INACTIVE | RESOLVED
+  observations String?   @db.Text
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@map("chronic_conditions")
+}
+
+// ── Patient Photos (CLI-05) ──────────────────────────
+
+model PatientPhoto {
+  id          String   @id @default(uuid())
+  patientId   String   @map("patient_id")
+  photoUrl    String   @map("photo_url")
+  description String?  @db.Text
+  takenAt     DateTime @default(now()) @map("taken_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@map("patient_photos")
 }
