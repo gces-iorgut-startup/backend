@@ -5,8 +5,10 @@ export type { Vaccination, VaccinationStatus }
 export interface CreateVaccinationDTO {
   patientId: string
   vaccineName: string
-  appliedAt?: Date
-  nextDoseAt?: Date
+  appliedAt?: Date | null
+  nextDoseAt?: Date | null
+  doseNumber?: number | null
+  intervalDays?: number | null
   status: VaccinationStatus
 }
 

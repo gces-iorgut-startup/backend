@@ -11,8 +11,8 @@ export class InMemoryVaccinationsRepository implements IVaccinationsRepository {
       vaccineName: data.vaccineName,
       appliedAt: data.appliedAt ?? null,
       nextDoseAt: data.nextDoseAt ?? null,
-      doseNumber: null,
-      intervalDays: null,
+      doseNumber: data.doseNumber ?? null,
+      intervalDays: data.intervalDays ?? null,
       status: data.status,
       createdAt: new Date(),
     }
