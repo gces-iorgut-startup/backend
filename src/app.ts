@@ -7,6 +7,7 @@ import fastifyStatic from '@fastify/static'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { env } from './config/env'
+import { prisma } from './config/prisma'
 import { errorHandler } from './shared/middleware/error-handler'
 import { authRoutes } from './modules/auth/infra/http/authRoutes'
 import { clinicRoutes } from './modules/clinic/infra/http/clinicRoutes'
@@ -27,36 +28,42 @@ import rateLimit from '@fastify/rate-limit'
 
 
 export function createApp() {
-  const app = fastify({ logger: env.NODE_ENV === 'development' })
+  const app = fastify({
+    logger: env.NODE_ENV !== 'test',
+    trustProxy: env.NODE_ENV === 'production',
+  })
 
   // ── Zod Type Provider ────────────────────────────────
   app.setValidatorCompiler(validatorCompiler)
   app.setSerializerCompiler(serializerCompiler)
 
   // ── Swagger / OpenAPI ─────────────────────────────────
-  app.register(fastifySwagger, {
-    openapi: {
-      info: {
-        title: 'IOUGURT API',
-        description: 'API de Gestão Veterinária — MVP 3 (Completo)',
-        version: '3.0.0',
-      },
-      components: {
-        securitySchemes: {
-          bearerAuth: {
-            type: 'http',
-            scheme: 'bearer',
-            bearerFormat: 'JWT',
+  const swaggerEnabled = env.ENABLE_SWAGGER ?? env.NODE_ENV !== 'production'
+  if (swaggerEnabled) {
+    app.register(fastifySwagger, {
+      openapi: {
+        info: {
+          title: 'IOUGURT API',
+          description: 'API de Gestão Veterinária — MVP 3 (Completo)',
+          version: '3.0.0',
+        },
+        components: {
+          securitySchemes: {
+            bearerAuth: {
+              type: 'http',
+              scheme: 'bearer',
+              bearerFormat: 'JWT',
+            },
           },
         },
       },
-    },
-    transform: jsonSchemaTransform,
-  })
+      transform: jsonSchemaTransform,
+    })
 
-  app.register(fastifySwaggerUi, {
-    routePrefix: '/docs',
-  })
+    app.register(fastifySwaggerUi, {
+      routePrefix: '/docs',
+    })
+  }
 
   // ── Plugins ───────────────────────────────────────────
   // Origens vêm de env (CORS_ORIGIN). Default '*' mantém o comportamento antigo
@@ -102,12 +109,31 @@ export function createApp() {
     global: false,
   })
 
-  // ── Health Check ─────────────────────────────────────
+  // ── Health Check (Liveness & Readiness) ──────────────
   app.get('/health', () => ({
     status: 'ok',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
   }))
+
+  app.get('/health/ready', async (_request, reply) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`
+      return reply.status(200).send({
+        status: 'ok',
+        database: 'up',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+      })
+    } catch (error) {
+      app.log.error({ error }, 'Falha no readiness check: banco de dados indisponível')
+      return reply.status(503).send({
+        status: 'error',
+        database: 'down',
+        timestamp: new Date().toISOString(),
+      })
+    }
+  })
 
   // ── Routes ────────────────────────────────────────────
   app.register(authRoutes, { prefix: '/auth' })
