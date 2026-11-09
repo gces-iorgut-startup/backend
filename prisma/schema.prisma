@@ -127,6 +127,8 @@ model Patient {
   allergies    String?
   species      String
   breed        String?
+  reproductiveCondition String?   @map("reproductive_condition")
+  coatDescription       String?   @map("coat_description") @db.Text
   tutorId      String    @map("tutor_id")
   clinicId     String    @map("clinic_id")
   createdAt    DateTime  @default(now()) @map("created_at")
