@@ -14,7 +14,7 @@ async function setupRepos() {
   const patientsRepo = new InMemoryPatientsRepository()
   const usersRepo = new InMemoryUsersRepository()
 
-  const patient = await patientsRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'Cachorro', clinicId: CLINIC_ID })
+  const patient = await patientsRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'CANINE', sex: 'MALE', clinicId: CLINIC_ID })
   const vet = await usersRepo.create({ name: 'Dr. Vet', email: 'vet@g.com', passwordHash: 'x', role: 'VET', clinicId: CLINIC_ID })
 
   return { appointmentsRepo, patientsRepo, usersRepo, patientId: patient.id, vetId: vet.id }
@@ -128,7 +128,7 @@ describe('CancelAppointmentUseCase', () => {
     const pRepo = new InMemoryPatientsRepository()
     const uRepo = new InMemoryUsersRepository()
     const aRepo = new InMemoryAppointmentsRepository()
-    const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'Cachorro', clinicId: CLINIC_ID })
+    const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'CANINE', sex: 'MALE', clinicId: CLINIC_ID })
     const vet = await uRepo.create({ name: 'Dr. Vet', email: 'vet2@g.com', passwordHash: 'x', role: 'VET', clinicId: CLINIC_ID })
     const appointment = await new CreateAppointmentUseCase(aRepo, pRepo, uRepo).execute({
       patientId: patient.id, vetId: vet.id, clinicId: CLINIC_ID,
@@ -143,7 +143,7 @@ describe('CancelAppointmentUseCase', () => {
     const pRepo = new InMemoryPatientsRepository()
     const uRepo = new InMemoryUsersRepository()
     const aRepo = new InMemoryAppointmentsRepository()
-    const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'Cachorro', clinicId: CLINIC_ID })
+    const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'CANINE', sex: 'MALE', clinicId: CLINIC_ID })
     const vet = await uRepo.create({ name: 'Dr. Vet', email: 'vet3@g.com', passwordHash: 'x', role: 'VET', clinicId: CLINIC_ID })
     const appointment = await new CreateAppointmentUseCase(aRepo, pRepo, uRepo).execute({
       patientId: patient.id, vetId: vet.id, clinicId: CLINIC_ID,
@@ -157,7 +157,7 @@ describe('CancelAppointmentUseCase', () => {
     const pRepo = new InMemoryPatientsRepository()
     const uRepo = new InMemoryUsersRepository()
     const aRepo = new InMemoryAppointmentsRepository()
-    const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'Cachorro', clinicId: CLINIC_ID })
+    const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'CANINE', sex: 'MALE', clinicId: CLINIC_ID })
     const vet = await uRepo.create({ name: 'Dr. Vet', email: 'vet4@g.com', passwordHash: 'x', role: 'VET', clinicId: CLINIC_ID })
     const appointment = await new CreateAppointmentUseCase(aRepo, pRepo, uRepo).execute({
       patientId: patient.id, vetId: vet.id, clinicId: CLINIC_ID,
@@ -253,7 +253,7 @@ describe('RescheduleAppointmentUseCase', () => {
     const pRepo = new InMemoryPatientsRepository()
     const uRepo = new InMemoryUsersRepository()
     const aRepo = new InMemoryAppointmentsRepository()
-    const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'Cachorro', clinicId: CLINIC_ID })
+    const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'CANINE', sex: 'MALE', clinicId: CLINIC_ID })
     const vet = await uRepo.create({ name: 'Dr. Vet', email: 'vet5@g.com', passwordHash: 'x', role: 'VET', clinicId: CLINIC_ID })
     const appointment = await new CreateAppointmentUseCase(aRepo, pRepo, uRepo).execute({
       patientId: patient.id, vetId: vet.id, clinicId: CLINIC_ID,
@@ -270,7 +270,7 @@ describe('RescheduleAppointmentUseCase', () => {
     const pRepo = new InMemoryPatientsRepository()
     const uRepo = new InMemoryUsersRepository()
     const aRepo = new InMemoryAppointmentsRepository()
-    const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'Cachorro', clinicId: CLINIC_ID })
+    const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'CANINE', sex: 'MALE', clinicId: CLINIC_ID })
     const vet = await uRepo.create({ name: 'Dr. Vet', email: 'vet6@g.com', passwordHash: 'x', role: 'VET', clinicId: CLINIC_ID })
     const appointment = await new CreateAppointmentUseCase(aRepo, pRepo, uRepo).execute({
       patientId: patient.id, vetId: vet.id, clinicId: CLINIC_ID,
@@ -289,7 +289,7 @@ describe('RescheduleAppointmentUseCase', () => {
     const pRepo = new InMemoryPatientsRepository()
     const uRepo = new InMemoryUsersRepository()
     const aRepo = new InMemoryAppointmentsRepository()
-    const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'Cachorro', clinicId: CLINIC_ID })
+    const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'CANINE', sex: 'MALE', clinicId: CLINIC_ID })
     const vet = await uRepo.create({ name: 'Dr. Vet', email: 'vet7@g.com', passwordHash: 'x', role: 'VET', clinicId: CLINIC_ID })
     const createUC = new CreateAppointmentUseCase(aRepo, pRepo, uRepo)
     await createUC.execute({ patientId: patient.id, vetId: vet.id, clinicId: CLINIC_ID, dateTime: new Date('2099-05-01T10:00:00'), endDateTime: new Date('2099-05-01T10:15:00'), category: 'OBSERVATION' })
@@ -303,7 +303,7 @@ describe('RescheduleAppointmentUseCase', () => {
     const pRepo = new InMemoryPatientsRepository()
     const uRepo = new InMemoryUsersRepository()
     const aRepo = new InMemoryAppointmentsRepository()
-    const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'Cachorro', clinicId: CLINIC_ID })
+    const patient = await pRepo.create({ name: 'Rex', tutorId: 'tutor-1', species: 'CANINE', sex: 'MALE', clinicId: CLINIC_ID })
     const vet = await uRepo.create({ name: 'Dr. Vet', email: 'vet8@g.com', passwordHash: 'x', role: 'VET', clinicId: CLINIC_ID })
     const appt = await new CreateAppointmentUseCase(aRepo, pRepo, uRepo).execute({ patientId: patient.id, vetId: vet.id, clinicId: CLINIC_ID, dateTime: new Date('2099-05-01T10:00:00'), endDateTime: new Date('2099-05-01T10:15:00'), category: 'OBSERVATION' })
     const result = await new RescheduleAppointmentUseCase(aRepo).execute({ appointmentId: appt.id, clinicId: CLINIC_ID, newDateTime: new Date('2099-05-01T10:00:00'), newEndDateTime: new Date('2099-05-01T10:15:00') })
