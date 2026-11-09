@@ -16,7 +16,13 @@ const makeTutorInput = (overrides = {}) => ({
 })
 
 const makeInput = (overrides = {}) => ({
-  clinicId: CLINIC_ID, name: 'Rex', tutorId: 'tutor-fixo', species: 'Cachorro', breed: 'Labrador', ...overrides,
+  clinicId: CLINIC_ID,
+  name: 'Rex',
+  tutorId: 'tutor-fixo',
+  species: 'CANINE' as const,
+  sex: 'MALE' as const,
+  breed: 'Labrador',
+  ...overrides,
 })
 
 describe('CreatePatientUseCase', () => {
@@ -29,6 +35,8 @@ describe('CreatePatientUseCase', () => {
     const patient = await sut.execute(makeInput({ tutorId: tutor.id }))
     expect(patient.id).toBeDefined()
     expect(patient.name).toBe('Rex')
+    expect(patient.species).toBe('CANINE')
+    expect(patient.sex).toBe('MALE')
   })
 
   it('deve lançar 404 quando tutorId não existe', async () => {
@@ -95,6 +103,23 @@ describe('UpdatePatientUseCase', () => {
     const updated = await new UpdatePatientUseCase(patientsRepo, tutorsRepo)
       .execute({ id: patientsRepo.items[0].id, clinicId: CLINIC_ID, name: 'Rex Jr.' })
     expect(updated.name).toBe('Rex Jr.')
+  })
+
+  it('deve atualizar condicao reprodutiva e descricao de pelagem', async () => {
+    const patientsRepo = new InMemoryPatientsRepository()
+    const tutorsRepo = new InMemoryTutorsRepository()
+    const tutor = await tutorsRepo.create(makeTutorInput())
+    await patientsRepo.create(makeInput({ tutorId: tutor.id }))
+
+    const updated = await new UpdatePatientUseCase(patientsRepo, tutorsRepo).execute({
+      id: patientsRepo.items[0].id,
+      clinicId: CLINIC_ID,
+      reproductiveCondition: 'NEUTERED',
+      coatDescription: 'Caramelo, pelo curto',
+    })
+
+    expect(updated.reproductiveCondition).toBe('NEUTERED')
+    expect(updated.coatDescription).toBe('Caramelo, pelo curto')
   })
 
   it('deve atualizar dados do tutor junto com o paciente', async () => {
