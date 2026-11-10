@@ -4,9 +4,8 @@ import fastifyJwt from '@fastify/jwt'
 import fastifyCookie from '@fastify/cookie'
 import fastifyMultipart from '@fastify/multipart'
 import fastifyStatic from '@fastify/static'
-import path from 'path'
-import { fileURLToPath } from 'url'
 import { env } from './config/env'
+import { UPLOADS_DIR, shouldServeInline } from './config/uploads'
 import { errorHandler } from './shared/middleware/error-handler'
 import { authRoutes } from './modules/auth/infra/http/authRoutes'
 import { clinicRoutes } from './modules/clinic/infra/http/clinicRoutes'
@@ -83,18 +82,20 @@ export function createApp() {
 
   app.register(fastifyCookie)
 
-  const __filename = fileURLToPath(import.meta.url)
-  const __dirname = path.dirname(__filename)
-
   app.register(fastifyMultipart, {
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   })
 
   app.register(fastifyStatic, {
-    root: path.join(__dirname, '..', 'uploads'),
+    root: UPLOADS_DIR,
     prefix: '/uploads/',
-    setHeaders(res) {
-      res.header('Content-Disposition', 'attachment')
+    setHeaders(reply, filePath) {
+      // Sem este if, toda imagem era devolvida como anexo e o navegador baixava
+      // o arquivo em vez de exibir — o que inviabiliza galeria de fotos (CLI-05)
+      // e a pré-visualização de exames de imagem (CLI-03).
+      if (!shouldServeInline(filePath)) {
+        reply.header('Content-Disposition', 'attachment')
+      }
     },
   })
 

@@ -5,8 +5,8 @@ import fs from 'fs'
 import path from 'path'
 import { pipeline } from 'stream/promises'
 import { AppError } from '@shared/errors/app-error'
+import { UPLOADS_DIR } from '@config/uploads'
 
-const UPLOADS_DIR = path.join(process.cwd(), 'uploads')
 const PDF_MIME = 'application/pdf'
 
 export async function uploadExamFileController(
