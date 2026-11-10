@@ -158,6 +158,19 @@ export class Factory {
       fileUrl: '/uploads/hemograma.pdf',
       fileType: 'pdf',
       uploadedAt: NOW,
+      ...overrides,
+    }
+  }
+
+  static patientPhoto(overrides: Overrides<Record<string, unknown>> = {}) {
+    return {
+      id: 'photo-1',
+      patientId: SEED.PATIENT_ID,
+      photoUrl: '/uploads/foto.png',
+      description: 'Lesão na pata direita',
+      takenAt: NOW,
+      createdAt: NOW,
+      ...overrides,
     }
   }
 
