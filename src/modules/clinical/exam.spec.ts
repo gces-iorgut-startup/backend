@@ -21,7 +21,8 @@ describe('Exam Files Use Cases', () => {
   it('should upload an exam file', async () => {
     const patient = await patientsRepository.create({
       name: 'Luna',
-      species: 'Cat',
+      species: 'FELINE',
+      sex: 'FEMALE',
       tutorId: 'tutor-xyz',
       clinicId: 'clinic-1',
     })
@@ -51,7 +52,8 @@ describe('Exam Files Use Cases', () => {
   it('should list all patient exam files', async () => {
     const patient = await patientsRepository.create({
       name: 'Luna',
-      species: 'Cat',
+      species: 'FELINE',
+      sex: 'FEMALE',
       tutorId: 'tutor-xyz',
       clinicId: 'clinic-1',
     })

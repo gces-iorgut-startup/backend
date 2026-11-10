@@ -25,7 +25,8 @@ describe('Vaccinations Use Cases', () => {
   it('should add an applied vaccination', async () => {
     const patient = await patientsRepository.create({
       name: 'Rex',
-      species: 'Dog',
+      species: 'CANINE',
+      sex: 'MALE',
       tutorId: 'tutor-1',
       clinicId: 'clinic-1',
     })
@@ -45,7 +46,8 @@ describe('Vaccinations Use Cases', () => {
   it('should not allow UP_TO_DATE without appliedAt', async () => {
     const patient = await patientsRepository.create({
       name: 'Rex',
-      species: 'Dog',
+      species: 'CANINE',
+      sex: 'MALE',
       tutorId: 'tutor-1',
       clinicId: 'clinic-1',
     })
@@ -62,7 +64,8 @@ describe('Vaccinations Use Cases', () => {
   it('should list all patient vaccinations', async () => {
     const patient = await patientsRepository.create({
       name: 'Rex',
-      species: 'Dog',
+      species: 'CANINE',
+      sex: 'MALE',
       tutorId: 'tutor-1',
       clinicId: 'clinic-1',
     })
@@ -90,7 +93,8 @@ describe('Vaccinations Use Cases', () => {
   it('should not allow updating status of an already UP_TO_DATE vaccination', async () => {
     const patient = await patientsRepository.create({
       name: 'Rex',
-      species: 'Dog',
+      species: 'CANINE',
+      sex: 'MALE',
       tutorId: 'tutor-1',
       clinicId: 'clinic-1',
     })
@@ -113,7 +117,8 @@ describe('Vaccinations Use Cases', () => {
   it('should calculate nextDoseAt automatically based on appliedAt and intervalDays', async () => {
     const patient = await patientsRepository.create({
       name: 'Rex',
-      species: 'Dog',
+      species: 'CANINE',
+      sex: 'MALE',
       tutorId: 'tutor-1',
       clinicId: 'clinic-1',
     })
@@ -141,7 +146,8 @@ describe('Vaccinations Use Cases', () => {
   it('should handle single-dose vaccine (dose única) without calculating nextDoseAt', async () => {
     const patient = await patientsRepository.create({
       name: 'Rex',
-      species: 'Dog',
+      species: 'CANINE',
+      sex: 'MALE',
       tutorId: 'tutor-1',
       clinicId: 'clinic-1',
     })
@@ -166,7 +172,8 @@ describe('Vaccinations Use Cases', () => {
   it('should handle last dose of vaccination schedule without calculating nextDoseAt', async () => {
     const patient = await patientsRepository.create({
       name: 'Rex',
-      species: 'Dog',
+      species: 'CANINE',
+      sex: 'MALE',
       tutorId: 'tutor-1',
       clinicId: 'clinic-1',
     })

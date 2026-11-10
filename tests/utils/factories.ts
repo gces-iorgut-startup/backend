@@ -80,7 +80,9 @@ export class Factory {
       name: 'Rex',
       photoUrl: null,
       birthDate: new Date('2020-05-10T00:00:00.000Z'),
-      sex: 'Masculino',
+      sex: 'MALE',
+      reproductiveCondition: 'NEUTERED',
+      coatDescription: 'Caramelo, pelo curto',
       weightKg: new Decimal('12.50'),
       observations: null,
       microchip: null,
@@ -91,6 +93,7 @@ export class Factory {
       clinicId: SEED.CLINIC_ID,
       createdAt: NOW,
       updatedAt: NOW,
+      deletedAt: null,
       ...overrides,
     }
   }
