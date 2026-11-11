@@ -19,6 +19,7 @@ const dummyTutor: Tutor = {
   email: null,
   address: null,
   insurance: null,
+  alternateContacts: null,
   createdAt: new Date(),
   updatedAt: new Date(),
   deletedAt: null,
