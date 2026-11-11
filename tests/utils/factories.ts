@@ -68,6 +68,7 @@ export class Factory {
       email: 'tutor.contato@iougurt.com',
       address: 'Rua Tutor, 200',
       insurance: null,
+      alternateContacts: null,
       createdAt: NOW,
       updatedAt: NOW,
       ...overrides,

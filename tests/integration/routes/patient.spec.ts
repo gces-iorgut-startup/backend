@@ -237,5 +237,36 @@ describe('Patient routes', () => {
         }),
       })
     })
+
+    it('atualiza os contatos alternativos do tutor pelo paciente', async () => {
+      const alternateContacts = [
+        { name: 'João Silva', phone: '(61) 99999-1111', relationship: 'Cônjuge', hasWhatsApp: true },
+      ]
+      const patientWithTutor = { ...Factory.patient(), tutor: Factory.tutor() }
+      const updatedTutor = Factory.tutor({
+        alternateContacts: [{ ...alternateContacts[0], phone: '61999991111' }],
+      })
+      const updatedPatient = { ...Factory.patient(), tutor: updatedTutor }
+      prismaMock.patient.findFirst
+        .mockResolvedValueOnce(patientWithTutor as never)
+        .mockResolvedValueOnce(updatedPatient as never)
+      prismaMock.tutor.update.mockResolvedValue(updatedTutor as never)
+      prismaMock.tutor.findFirst.mockResolvedValue(updatedTutor as never)
+      prismaMock.patient.update.mockResolvedValue(Factory.patient() as never)
+
+      const response = await app.injectAuth({
+        method: 'PUT',
+        url: `/patients/${SEED.PATIENT_ID}`,
+        payload: { tutor: { alternateContacts } },
+      })
+
+      expect(response.statusCode).toBe(HTTP.OK)
+      expect(prismaMock.tutor.update).toHaveBeenCalledWith({
+        where: { id: SEED.TUTOR_ID },
+        data: {
+          alternateContacts: [{ ...alternateContacts[0], phone: '61999991111' }],
+        },
+      })
+    })
   })
 })
