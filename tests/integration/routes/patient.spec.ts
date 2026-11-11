@@ -133,6 +133,58 @@ describe('Patient routes', () => {
       expect(response.statusCode).toBe(HTTP.OK)
       expect(response.json().patients).toHaveLength(1)
     })
+
+    it('busca pacientes por nome do paciente ou do tutor', async () => {
+      prismaMock.patient.findMany.mockResolvedValue([])
+      prismaMock.patient.count.mockResolvedValue(0)
+
+      const response = await app.injectAuth({ method: 'GET', url: '/patients?search=Maria' })
+
+      expect(response.statusCode).toBe(HTTP.OK)
+      expect(prismaMock.patient.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([
+            { name: { contains: 'Maria', mode: 'insensitive' } },
+            { tutor: { fullName: { contains: 'Maria', mode: 'insensitive' } } },
+          ]),
+        }),
+      }))
+    })
+
+    it('normaliza CPF com mascara antes de pesquisar', async () => {
+      prismaMock.patient.findMany.mockResolvedValue([])
+      prismaMock.patient.count.mockResolvedValue(0)
+
+      const response = await app.injectAuth({ method: 'GET', url: '/patients?search=529.982.247-25' })
+
+      expect(response.statusCode).toBe(HTTP.OK)
+      expect(prismaMock.patient.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([
+            { tutor: { cpf: { contains: '52998224725' } } },
+          ]),
+        }),
+      }))
+    })
+
+    it('retorna lista vazia quando a busca nao encontra pacientes', async () => {
+      prismaMock.patient.findMany.mockResolvedValue([])
+      prismaMock.patient.count.mockResolvedValue(0)
+
+      const response = await app.injectAuth({ method: 'GET', url: '/patients?search=inexistente' })
+
+      expect(response.statusCode).toBe(HTTP.OK)
+      expect(response.json()).toEqual({ patients: [], total: 0 })
+    })
+
+    it.each(['a', ' ', 'x'.repeat(101)])('rejeita termo de busca invalido', async (search) => {
+      const response = await app.injectAuth({
+        method: 'GET',
+        url: `/patients?search=${encodeURIComponent(search)}`,
+      })
+
+      expect(response.statusCode).toBe(HTTP.UNPROCESSABLE)
+    })
   })
 
   describe('GET /patients/:id', () => {
