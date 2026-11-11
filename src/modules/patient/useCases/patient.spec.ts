@@ -75,6 +75,10 @@ describe('ListPatientsUseCase', () => {
     await patientsRepo.create(makeInput({ name: 'Bob', tutorId: 'tutor-2' }))
     // Paciente de outra clínica — não deve aparecer
     await patientsRepo.create(makeInput({ name: 'Alien', tutorId: 'tutor-3', clinicId: 'clinic-2' }))
+
+    patientsRepo.items[0].tutor = { ...patientsRepo.items[0].tutor, fullName: 'Maria Silva', cpf: CPF_MARIA }
+    patientsRepo.items[1].tutor = { ...patientsRepo.items[1].tutor, fullName: 'Maria Silva', cpf: CPF_MARIA }
+    patientsRepo.items[2].tutor = { ...patientsRepo.items[2].tutor, fullName: 'Joao Santos', cpf: CPF_JOAO }
   })
 
   it('deve listar apenas pacientes da clínica correta', async () => {
@@ -91,6 +95,26 @@ describe('ListPatientsUseCase', () => {
   it('deve filtrar por tutorId', async () => {
     const result = await new ListPatientsUseCase(patientsRepo).execute({ clinicId: CLINIC_ID, tutorId: 'tutor-1' })
     expect(result.total).toBe(2)
+  })
+
+  it('deve filtrar pelo nome do tutor sem diferenciar maiusculas e minusculas', async () => {
+    const result = await new ListPatientsUseCase(patientsRepo).execute({ clinicId: CLINIC_ID, search: 'MARIA' })
+    expect(result.total).toBe(2)
+    expect(result.patients.map(patient => patient.name)).toEqual(['Rex', 'Mel'])
+  })
+
+  it('deve filtrar pelo CPF do tutor com ou sem mascara', async () => {
+    const sut = new ListPatientsUseCase(patientsRepo)
+    const unmasked = await sut.execute({ clinicId: CLINIC_ID, search: CPF_JOAO })
+    const masked = await sut.execute({ clinicId: CLINIC_ID, search: '390.533.447-05' })
+
+    expect(unmasked.patients.map(patient => patient.name)).toEqual(['Bob'])
+    expect(masked.patients.map(patient => patient.name)).toEqual(['Bob'])
+  })
+
+  it('deve retornar lista vazia quando nao houver correspondencias', async () => {
+    const result = await new ListPatientsUseCase(patientsRepo).execute({ clinicId: CLINIC_ID, search: 'inexistente' })
+    expect(result).toEqual({ patients: [], total: 0 })
   })
 })
 
