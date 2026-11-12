@@ -158,6 +158,7 @@ export class Factory {
       fileName: 'hemograma.pdf',
       fileUrl: '/uploads/hemograma.pdf',
       fileType: 'pdf',
+      clinicalType: null,
       uploadedAt: NOW,
     }
   }
