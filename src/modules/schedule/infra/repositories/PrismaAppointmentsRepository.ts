@@ -1,4 +1,5 @@
 import { prisma } from '../../../../config/prisma'
+import { getDayRange } from '@shared/utils/dayRange'
 import type {
   IAppointmentsRepository,
   CreateAppointmentDTO,
@@ -61,11 +62,8 @@ export class PrismaAppointmentsRepository implements IAppointmentsRepository {
     })
   }
 
-  async listByDay(date: Date, clinicId: string, vetId?: string): Promise<AppointmentWithRelations[]> {
-    const start = new Date(date)
-    start.setHours(0, 0, 0, 0)
-    const end = new Date(date)
-    end.setHours(23, 59, 59, 999)
+  async listByDay(date: Date, clinicId: string, vetId?: string, tzOffsetMinutes = 0): Promise<AppointmentWithRelations[]> {
+    const { start, end } = getDayRange(date, tzOffsetMinutes)
 
     return prisma.appointment.findMany({
       where: {
@@ -79,13 +77,10 @@ export class PrismaAppointmentsRepository implements IAppointmentsRepository {
     })
   }
 
-  async listByStatus(status: AppointmentStatus, clinicId: string, date?: Date): Promise<AppointmentWithRelations[]> {
+  async listByStatus(status: AppointmentStatus, clinicId: string, date?: Date, tzOffsetMinutes = 0): Promise<AppointmentWithRelations[]> {
     let dayRange: { gte: Date, lte: Date } | undefined
     if (date) {
-      const start = new Date(date)
-      start.setHours(0, 0, 0, 0)
-      const end = new Date(date)
-      end.setHours(23, 59, 59, 999)
+      const { start, end } = getDayRange(date, tzOffsetMinutes)
       dayRange = { gte: start, lte: end }
     }
 
