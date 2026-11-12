@@ -100,6 +100,7 @@ model Tutor {
   email     String?
   address   String?
   insurance String?  // convênio (US05)
+  alternateContacts Json? @map("alternate_contacts")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at") // soft delete (BE-02) — null = ativo
@@ -127,6 +128,8 @@ model Patient {
   allergies    String?
   species      String
   breed        String?
+  reproductiveCondition String?   @map("reproductive_condition")
+  coatDescription       String?   @map("coat_description") @db.Text
   tutorId      String    @map("tutor_id")
   clinicId     String    @map("clinic_id")
   createdAt    DateTime  @default(now()) @map("created_at")
@@ -171,6 +174,9 @@ model Appointment {
 }
 
 enum AppointmentCategory {
+  GENERAL
+  RETURN
+  SURGICAL_EVALUATION
   VACCINATION // Vacinação
   OBSERVATION // Observação
   EXAM        // Exame

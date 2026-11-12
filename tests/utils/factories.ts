@@ -68,6 +68,7 @@ export class Factory {
       email: 'tutor.contato@iougurt.com',
       address: 'Rua Tutor, 200',
       insurance: null,
+      alternateContacts: null,
       createdAt: NOW,
       updatedAt: NOW,
       ...overrides,
@@ -80,7 +81,9 @@ export class Factory {
       name: 'Rex',
       photoUrl: null,
       birthDate: new Date('2020-05-10T00:00:00.000Z'),
-      sex: 'Masculino',
+      sex: 'MALE',
+      reproductiveCondition: 'NEUTERED',
+      coatDescription: 'Caramelo, pelo curto',
       weightKg: new Decimal('12.50'),
       observations: null,
       microchip: null,
@@ -91,6 +94,7 @@ export class Factory {
       clinicId: SEED.CLINIC_ID,
       createdAt: NOW,
       updatedAt: NOW,
+      deletedAt: null,
       ...overrides,
     }
   }
@@ -125,6 +129,7 @@ export class Factory {
       prescriptions: null,
       breathingNotes: null,
       routineGuidance: null,
+      observations: null,
       aiSummary: null,
       finalized: false,
       createdAt: NOW,
@@ -154,7 +159,21 @@ export class Factory {
       fileName: 'hemograma.pdf',
       fileUrl: '/uploads/hemograma.pdf',
       fileType: 'pdf',
+      clinicalType: null,
       uploadedAt: NOW,
+      ...overrides,
+    }
+  }
+
+  static patientPhoto(overrides: Overrides<Record<string, unknown>> = {}) {
+    return {
+      id: 'photo-1',
+      patientId: SEED.PATIENT_ID,
+      photoUrl: '/uploads/foto.png',
+      description: 'Lesão na pata direita',
+      takenAt: NOW,
+      createdAt: NOW,
+      ...overrides,
     }
   }
 
