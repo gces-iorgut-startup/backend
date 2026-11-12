@@ -76,6 +76,24 @@ describe('Patient photo routes', () => {
       expect(response.statusCode).toBe(HTTP.UNAUTHORIZED)
     })
 
+    it('rejeita SVG (image/svg+xml) com 400', async () => {
+      const boundary = '----photo-svg-boundary'
+      const body =
+        `--${boundary}\r\nContent-Disposition: form-data; name="patientId"\r\n\r\n${SEED.PATIENT_ID}\r\n` +
+        `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="x.svg"\r\n` +
+        `Content-Type: image/svg+xml\r\n\r\n<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>\r\n` +
+        `--${boundary}--\r\n`
+
+      const response = await app.injectAuth({
+        method: 'POST',
+        url: '/patient-photos/upload',
+        headers: { 'content-type': `multipart/form-data; boundary=${boundary}` },
+        payload: body,
+      })
+
+      expect(response.statusCode).toBe(HTTP.BAD_REQUEST)
+    })
+
     it('rejeita requisição sem arquivo', async () => {
       const response = await app.injectAuth({
         method: 'POST',

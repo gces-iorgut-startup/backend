@@ -7,6 +7,14 @@ import { pipeline } from 'stream/promises'
 import { AppError } from '@shared/errors/app-error'
 import { UPLOADS_DIR } from '@config/uploads'
 
+/** Formatos aceitos e a extensão gravada em disco (nunca a enviada pelo cliente). */
+const PHOTO_MIME_TO_EXT: Record<string, string> = {
+  'image/png': '.png',
+  'image/jpeg': '.jpg',
+  'image/webp': '.webp',
+  'image/gif': '.gif',
+}
+
 /** Lê um campo de texto do multipart, que vem embrulhado em `{ value }`. */
 function readField(
   fields: Record<string, unknown>,
@@ -38,7 +46,10 @@ export async function uploadPatientPhotoController(
 
   // Diferente dos exames, aqui só imagem faz sentido: é uma galeria de
   // acompanhamento visual do paciente.
-  if (!data.mimetype.startsWith('image/')) {
+  // Allowlist (e não `startsWith('image/')`): SVG é image/* e executaria script
+  // se aberto direto na origem da API.
+  const fileExt = PHOTO_MIME_TO_EXT[data.mimetype]
+  if (!fileExt) {
     throw new AppError('Formato inválido. Envie apenas imagem.', 400)
   }
 
@@ -58,7 +69,6 @@ export async function uploadPatientPhotoController(
   // paciente não pertence à clínica do usuário.
   await useCase.assertPatientBelongsToClinic(patientId, clinicId)
 
-  const fileExt = path.extname(data.filename)
   const uniqueName = `${randomUUID()}${fileExt}`
   const filePath = path.join(UPLOADS_DIR, uniqueName)
   const photoUrl = `/uploads/${uniqueName}`
