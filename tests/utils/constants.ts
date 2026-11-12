@@ -27,6 +27,10 @@ export const VACCINATION = {
   STATUSES: ['UP_TO_DATE', 'PENDING', 'OVERDUE'] as const,
 }
 
+export const CHRONIC_CONDITION = {
+  STATUSES: ['ACTIVE', 'INACTIVE', 'RESOLVED'] as const,
+}
+
 export const SEED = {
   CLINIC_ID: '11111111-1111-4111-8111-111111111111',
   OWNER_ID: '22222222-2222-4222-8222-222222222222',
@@ -38,6 +42,7 @@ export const SEED = {
   RECORD_ID: '88888888-8888-4888-8888-888888888888',
   VACCINATION_ID: '99999999-9999-4999-8999-999999999999',
   EXAM_ID: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  CHRONIC_CONDITION_ID: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
 } as const
 
 export const FAKE = {
