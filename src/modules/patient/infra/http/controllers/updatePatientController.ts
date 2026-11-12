@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { isValidCpf, onlyDigits } from '@shared/documents'
 import { makeUpdatePatientUseCase } from '../../../useCases/factories/makeUpdatePatientUseCase'
 import { PATIENT_SEXES, PATIENT_SPECIES, REPRODUCTIVE_CONDITIONS } from '../../../patientFields'
+import { tutorAlternateContactsSchema } from '../../../../tutor/tutorContact'
 
 export const updatePatientBodySchema = z.object({
   name: z.string().min(1).optional(),
@@ -28,6 +29,7 @@ export const updatePatientBodySchema = z.object({
     email: z.string().email().optional(),
     address: z.string().optional(),
     insurance: z.string().optional(),
+    alternateContacts: tutorAlternateContactsSchema.optional(),
   }).optional(),
 })
 
