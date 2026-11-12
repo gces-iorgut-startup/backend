@@ -18,6 +18,7 @@ export const dashboardRoutes: FastifyPluginAsyncZod = async app => {
   app.get(
     '/daily',
     {
+      preHandler: [verifyRole('OWNER', 'VET')],
       schema: {
         summary: 'Get Daily Overview',
         tags: ['Dashboard'],
