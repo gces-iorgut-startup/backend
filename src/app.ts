@@ -15,6 +15,7 @@ import { appointmentRoutes } from './modules/schedule/infra/http/appointmentRout
 import { clinicalRoutes } from './modules/clinical/infra/http/clinicalRoutes'
 import { vaccinationRoutes } from './modules/clinical/infra/http/vaccinationRoutes'
 import { examRoutes } from './modules/clinical/infra/http/examRoutes'
+import { photoRoutes } from './modules/clinical/infra/http/photoRoutes'
 import { dashboardRoutes } from './modules/dashboard/infra/http/dashboardRoutes'
 import { portalRoutes } from './modules/portal/infra/http/portalRoutes'
 import { testRoutes } from './modules/test/infra/http/testRoutes'
@@ -119,6 +120,7 @@ export function createApp() {
   app.register(clinicalRoutes, { prefix: '/clinical-records' })
   app.register(vaccinationRoutes, { prefix: '/vaccinations' })
   app.register(examRoutes, { prefix: '/exams' })
+  app.register(photoRoutes, { prefix: '/patient-photos' })
   app.register(dashboardRoutes, { prefix: '/dashboard' })
   app.register(portalRoutes, { prefix: '/portal' })
   app.register(testRoutes, { prefix: '/test' })
