@@ -1,6 +1,7 @@
 import { AppError } from '../../../shared/errors/app-error'
 import { prisma } from '../../../config/prisma'
 import dayjs from 'dayjs'
+import { clinicalObservationsToPlainText } from '../../../shared/clinical/routine-guidance-meta'
 
 interface GetTutorAlertsRequest {
   userId: string
@@ -76,10 +77,14 @@ export class GetTutorAlertsUseCase {
         include: { patient: { select: { name: true } } },
       })
 
-      if (lastRecord?.routineGuidance) {
+      // Sem o tratamento abaixo o tutor recebia o JSON cru do formato
+      // improvisado ("__IOUGURT_META__:{...}") como se fosse a recomendação.
+      const recommendation = lastRecord ? clinicalObservationsToPlainText(lastRecord) : ''
+
+      if (lastRecord && recommendation) {
         alerts.push({
           type: 'vet_recommendation',
-          message: lastRecord.routineGuidance,
+          message: recommendation,
           patientName: lastRecord.patient.name,
         })
       }

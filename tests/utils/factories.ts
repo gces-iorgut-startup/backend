@@ -129,6 +129,7 @@ export class Factory {
       prescriptions: null,
       breathingNotes: null,
       routineGuidance: null,
+      observations: null,
       aiSummary: null,
       finalized: false,
       createdAt: NOW,
