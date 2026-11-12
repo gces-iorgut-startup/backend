@@ -78,7 +78,7 @@ export function createApp() {
   app.register(fastifyJwt, {
     secret: env.JWT_SECRET,
     sign: { expiresIn: env.JWT_EXPIRES_IN },
-    cookie: { cookieName: 'refreshToken', signed: false },
+    cookie: { cookieName: 'accessToken', signed: false },
   })
 
   app.register(fastifyCookie)
