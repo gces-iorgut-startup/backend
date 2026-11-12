@@ -24,6 +24,11 @@ const envSchema = z.object({
   // Segredo exigido (header x-e2e-secret) pelas rotas /test, usadas só nos testes E2E
   // com NODE_ENV=test. Vazio mantém essas rotas desligadas.
   E2E_TEST_SECRET: z.string().default(''),
+  // Diretório onde ficam os arquivos enviados (exames e fotos de pacientes).
+  // Precisa apontar para um disco persistente em produção: o conteúdo não vive
+  // no banco, então se a pasta ficar dentro do container os arquivos somem a
+  // cada redeploy. Default relativo ao processo mantém o comportamento local.
+  UPLOADS_DIR: z.string().default('uploads'),
 })
 
 const _env = envSchema.safeParse(process.env)
