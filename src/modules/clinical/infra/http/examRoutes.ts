@@ -1,8 +1,11 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { verifyJwt } from '@shared/middleware/verify-jwt'
 import { uploadExamFileController } from './controllers/uploadExamFileController'
-import { listPatientExamsController, listPatientExamsParamsSchema } from './controllers/listPatientExamsController'
-import { z } from 'zod'
+import {
+  listPatientExamsController,
+  listPatientExamsParamsSchema,
+  listPatientExamsQuerySchema,
+} from './controllers/listPatientExamsController'
 
 export const examRoutes: FastifyPluginAsyncZod = async app => {
   app.addHook('onRequest', verifyJwt)
@@ -27,6 +30,7 @@ export const examRoutes: FastifyPluginAsyncZod = async app => {
         summary: 'List Patient Exam Files',
         tags: ['Exam Files'],
         params: listPatientExamsParamsSchema,
+        querystring: listPatientExamsQuerySchema,
         security: [{ bearerAuth: [] }],
       },
     },

@@ -68,6 +68,7 @@ export class Factory {
       email: 'tutor.contato@iougurt.com',
       address: 'Rua Tutor, 200',
       insurance: null,
+      alternateContacts: null,
       createdAt: NOW,
       updatedAt: NOW,
       ...overrides,
@@ -158,7 +159,21 @@ export class Factory {
       fileName: 'hemograma.pdf',
       fileUrl: '/uploads/hemograma.pdf',
       fileType: 'pdf',
+      clinicalType: null,
       uploadedAt: NOW,
+      ...overrides,
+    }
+  }
+
+  static patientPhoto(overrides: Overrides<Record<string, unknown>> = {}) {
+    return {
+      id: 'photo-1',
+      patientId: SEED.PATIENT_ID,
+      photoUrl: '/uploads/foto.png',
+      description: 'Lesão na pata direita',
+      takenAt: NOW,
+      createdAt: NOW,
+      ...overrides,
     }
   }
 

@@ -4,6 +4,7 @@ import { AppointmentStatus } from '@prisma/client'
 import type {
   IAppointmentsRepository,
   CreateAppointmentDTO,
+  UpdateAppointmentDTO,
   AppointmentWithRelations,
   AppointmentReminderCandidate,
 } from '../IAppointmentsRepository'
@@ -68,6 +69,18 @@ export class InMemoryAppointmentsRepository implements IAppointmentsRepository {
     }
     this.items.push(appointment)
     return appointment
+  }
+
+  async update(id: string, data: UpdateAppointmentDTO): Promise<Appointment> {
+    const index = this.items.findIndex(a => a.id === id)
+    this.items[index] = {
+      ...this.items[index],
+      ...data,
+      reminderSentAt: null,
+      updatedAt: new Date(),
+      ...(data.vetId && { vet: { id: data.vetId, name: 'VeterinÃ¡rio' } }),
+    }
+    return this.items[index]
   }
 
   async findById(id: string, clinicId: string): Promise<Appointment | null> {

@@ -2,6 +2,7 @@ import { prisma } from '../../../../config/prisma'
 import type {
   IAppointmentsRepository,
   CreateAppointmentDTO,
+  UpdateAppointmentDTO,
   AppointmentWithRelations,
   AppointmentReminderCandidate,
 } from '../../repositories/IAppointmentsRepository'
@@ -16,6 +17,13 @@ const withRelations = {
 export class PrismaAppointmentsRepository implements IAppointmentsRepository {
   async create(data: CreateAppointmentDTO): Promise<Appointment> {
     return prisma.appointment.create({ data })
+  }
+
+  async update(id: string, data: UpdateAppointmentDTO): Promise<Appointment> {
+    return prisma.appointment.update({
+      where: { id },
+      data: { ...data, reminderSentAt: null },
+    })
   }
 
   async findById(id: string, clinicId: string): Promise<Appointment | null> {

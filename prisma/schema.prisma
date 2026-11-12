@@ -100,6 +100,7 @@ model Tutor {
   email     String?
   address   String?
   insurance String?  // convênio (US05)
+  alternateContacts Json? @map("alternate_contacts")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at") // soft delete (BE-02) — null = ativo
@@ -173,6 +174,9 @@ model Appointment {
 }
 
 enum AppointmentCategory {
+  GENERAL
+  RETURN
+  SURGICAL_EVALUATION
   VACCINATION // Vacinação
   OBSERVATION // Observação
   EXAM        // Exame
