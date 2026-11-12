@@ -18,21 +18,6 @@ import {
 
 export const chronicConditionRoutes: FastifyPluginAsyncZod = async app => {
   app.addHook('onRequest', verifyJwt)
-  app.addHook('preHandler', verifyRole('OWNER', 'VET'))
-
-  app.post(
-    '/',
-    {
-      schema: {
-        summary: 'Create Chronic Condition',
-        tags: ['Chronic Conditions'],
-        body: createChronicConditionBodySchema,
-        response: { 201: chronicConditionResponseSchema },
-        security: [{ bearerAuth: [] }],
-      },
-    },
-    createChronicConditionController
-  )
 
   app.get(
     '/patient/:patientId',
@@ -48,18 +33,36 @@ export const chronicConditionRoutes: FastifyPluginAsyncZod = async app => {
     listPatientChronicConditionsController
   )
 
-  app.patch(
-    '/:id',
-    {
-      schema: {
-        summary: 'Update Chronic Condition',
-        tags: ['Chronic Conditions'],
-        params: updateChronicConditionParamsSchema,
-        body: updateChronicConditionBodySchema,
-        response: { 200: chronicConditionResponseSchema },
-        security: [{ bearerAuth: [] }],
+  app.register(async writeRoutes => {
+    writeRoutes.addHook('preHandler', verifyRole('OWNER', 'VET'))
+
+    writeRoutes.post(
+      '/',
+      {
+        schema: {
+          summary: 'Create Chronic Condition',
+          tags: ['Chronic Conditions'],
+          body: createChronicConditionBodySchema,
+          response: { 201: chronicConditionResponseSchema },
+          security: [{ bearerAuth: [] }],
+        },
       },
-    },
-    updateChronicConditionController
-  )
+      createChronicConditionController
+    )
+
+    writeRoutes.patch(
+      '/:id',
+      {
+        schema: {
+          summary: 'Update Chronic Condition',
+          tags: ['Chronic Conditions'],
+          params: updateChronicConditionParamsSchema,
+          body: updateChronicConditionBodySchema,
+          response: { 200: chronicConditionResponseSchema },
+          security: [{ bearerAuth: [] }],
+        },
+      },
+      updateChronicConditionController
+    )
+  })
 }

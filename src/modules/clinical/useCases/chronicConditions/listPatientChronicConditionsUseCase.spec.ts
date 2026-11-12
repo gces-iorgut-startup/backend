@@ -13,7 +13,7 @@ describe('ListPatientChronicConditionsUseCase', () => {
   let useCase: ListPatientChronicConditionsUseCase
 
   async function createPatient(clinicId = CLINIC_ID) {
-    return patientsRepository.create({ name: 'Rex', species: 'Canino', tutorId: 'tutor-1', clinicId })
+    return patientsRepository.create({ name: 'Rex', species: 'CANINE', sex: 'MALE', tutorId: 'tutor-1', clinicId })
   }
 
   beforeEach(() => {

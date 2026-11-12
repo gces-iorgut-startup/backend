@@ -21,23 +21,27 @@ describe('Chronic condition routes', () => {
       { method: 'PATCH', url: `/chronic-conditions/${SEED.CHRONIC_CONDITION_ID}`, payload: { status: 'RESOLVED' } },
     ] as const
 
+    const writeRoutes = [
+      { method: 'POST', url: '/chronic-conditions', payload: { patientId: SEED.PATIENT_ID, name: 'Asma' } },
+      { method: 'PATCH', url: `/chronic-conditions/${SEED.CHRONIC_CONDITION_ID}`, payload: { status: 'RESOLVED' } },
+    ] as const
+
     it.each(routes)('retorna 401 sem token em $method $url', async ({ method, url, ...rest }) => {
       const response = await app.inject({ method, url, ...('payload' in rest ? { payload: rest.payload } : {}) })
       expect(response.statusCode).toBe(HTTP.UNAUTHORIZED)
     })
 
-    it.each(routes)('retorna 403 para TUTOR em $method $url', async ({ method, url, ...rest }) => {
+    it.each(writeRoutes)('retorna 403 para TUTOR em $method $url', async ({ method, url, ...rest }) => {
       const response = await app.injectAuth(
         { method, url, ...('payload' in rest ? { payload: rest.payload } : {}) },
         { role: ROLE.TUTOR },
       )
       expect(response.statusCode).toBe(HTTP.FORBIDDEN)
       expect(prismaMock.chronicCondition.create).not.toHaveBeenCalled()
-      expect(prismaMock.chronicCondition.findMany).not.toHaveBeenCalled()
       expect(prismaMock.chronicCondition.update).not.toHaveBeenCalled()
     })
 
-    it.each([ROLE.OWNER, ROLE.VET])('permite o perfil %s', async (role) => {
+    it.each([ROLE.OWNER, ROLE.VET, ROLE.TUTOR])('permite leitura para o perfil %s', async (role) => {
       prismaMock.patient.findFirst.mockResolvedValue(Factory.patient() as never)
       prismaMock.chronicCondition.findMany.mockResolvedValue([] as never)
       const response = await app.injectAuth(

@@ -14,7 +14,7 @@ describe('UpdateChronicConditionUseCase', () => {
   let useCase: UpdateChronicConditionUseCase
 
   async function createCondition(clinicId = CLINIC_ID) {
-    const patient = await patientsRepository.create({ name: 'Rex', species: 'Canino', tutorId: 'tutor-1', clinicId })
+    const patient = await patientsRepository.create({ name: 'Rex', species: 'CANINE', sex: 'MALE', tutorId: 'tutor-1', clinicId })
     const condition = await chronicConditionsRepository.create({
       patientId: patient.id,
       name: 'Diabetes',

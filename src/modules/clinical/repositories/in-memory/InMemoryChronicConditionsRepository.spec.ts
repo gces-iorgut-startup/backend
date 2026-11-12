@@ -12,7 +12,7 @@ describe('InMemoryChronicConditionsRepository', () => {
   })
 
   it('findById só retorna registros de pacientes da clínica informada', async () => {
-    const patient = await patientsRepository.create({ name: 'Rex', species: 'Canino', tutorId: 't', clinicId: 'clinic-1' })
+    const patient = await patientsRepository.create({ name: 'Rex', species: 'CANINE', sex: 'MALE', tutorId: 't', clinicId: 'clinic-1' })
     const condition = await repository.create({ patientId: patient.id, name: 'Asma', status: 'ACTIVE' })
 
     expect(await repository.findById(condition.id, 'clinic-1')).toEqual(condition)
@@ -20,7 +20,7 @@ describe('InMemoryChronicConditionsRepository', () => {
   })
 
   it('findById ignora registros de pacientes excluídos logicamente', async () => {
-    const patient = await patientsRepository.create({ name: 'Rex', species: 'Canino', tutorId: 't', clinicId: 'clinic-1' })
+    const patient = await patientsRepository.create({ name: 'Rex', species: 'CANINE', sex: 'MALE', tutorId: 't', clinicId: 'clinic-1' })
     const condition = await repository.create({ patientId: patient.id, name: 'Asma', status: 'ACTIVE' })
     await patientsRepository.softDelete(patient.id)
 
@@ -28,7 +28,7 @@ describe('InMemoryChronicConditionsRepository', () => {
   })
 
   it('update não sobrescreve campos undefined e atualiza updatedAt', async () => {
-    const patient = await patientsRepository.create({ name: 'Rex', species: 'Canino', tutorId: 't', clinicId: 'clinic-1' })
+    const patient = await patientsRepository.create({ name: 'Rex', species: 'CANINE', sex: 'MALE', tutorId: 't', clinicId: 'clinic-1' })
     const condition = await repository.create({ patientId: patient.id, name: 'Asma', status: 'ACTIVE', observations: 'obs' })
     const createdUpdatedAt = condition.updatedAt
 
