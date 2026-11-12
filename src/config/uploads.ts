@@ -13,7 +13,9 @@ import { env } from './env'
  */
 export const UPLOADS_DIR = path.resolve(process.cwd(), env.UPLOADS_DIR)
 
-const INLINE_IMAGE_EXTENSIONS = /\.(png|jpe?g|webp|gif|avif|bmp|svg)$/i
+// SVG fica de fora de propósito: servido inline na origem da API, um SVG com
+// <script> executaria como XSS armazenado. Só formatos raster seguros.
+const INLINE_IMAGE_EXTENSIONS = /\.(png|jpe?g|webp|gif)$/i
 
 /**
  * Imagens precisam ser renderizadas pelo navegador (galeria de fotos e
