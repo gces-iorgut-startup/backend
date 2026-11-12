@@ -42,8 +42,17 @@ export interface CreateAppointmentDTO {
   observation?: string
 }
 
+export interface UpdateAppointmentDTO {
+  vetId?: string
+  dateTime?: Date
+  endDateTime?: Date | null
+  category?: AppointmentCategory
+  observation?: string | null
+}
+
 export interface IAppointmentsRepository {
   create(data: CreateAppointmentDTO): Promise<Appointment>
+  update(id: string, data: UpdateAppointmentDTO): Promise<Appointment>
   findById(id: string, clinicId: string): Promise<Appointment | null>
   findConflict(vetId: string, dateTime: Date, endDateTime: Date, excludeId?: string): Promise<Appointment | null>
   listByDay(date: Date, clinicId: string, vetId?: string): Promise<AppointmentWithRelations[]>
