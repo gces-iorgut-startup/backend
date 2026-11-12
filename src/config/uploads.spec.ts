@@ -30,6 +30,11 @@ describe('Configuração de uploads', () => {
       expect(shouldServeInline('/uploads/planilha.xlsx')).toBe(false)
     })
 
+    it('nunca serve SVG inline (risco de XSS armazenado)', () => {
+      expect(shouldServeInline('/uploads/x.svg')).toBe(false)
+      expect(shouldServeInline('/uploads/X.SVG')).toBe(false)
+    })
+
     it('não se confunde com a extensão aparecendo no meio do nome', () => {
       expect(shouldServeInline('/uploads/relatorio.png.pdf')).toBe(false)
     })
