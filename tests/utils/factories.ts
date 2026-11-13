@@ -191,6 +191,39 @@ export class Factory {
     }
   }
 
+  static hospitalization(overrides: Overrides<Record<string, unknown>> = {}) {
+    return {
+      id: SEED.HOSPITALIZATION_ID,
+      clinicId: SEED.CLINIC_ID,
+      patientId: SEED.PATIENT_ID,
+      admittedByVetId: SEED.OWNER_ID,
+      bedIdentifier: 'Baia 03',
+      reason: 'Pós-operatório de castração',
+      status: 'ADMITTED',
+      admittedAt: NOW,
+      dischargedAt: null,
+      dischargeNotes: null,
+      createdAt: NOW,
+      updatedAt: NOW,
+      ...overrides,
+    }
+  }
+
+  static hospitalizationEvolution(overrides: Overrides<Record<string, unknown>> = {}) {
+    return {
+      id: SEED.HOSPITALIZATION_EVOLUTION_ID,
+      hospitalizationId: SEED.HOSPITALIZATION_ID,
+      recordedByVetId: SEED.OWNER_ID,
+      temperature: 38.5,
+      heartRate: 90,
+      respiratoryRate: 24,
+      mucousMembranes: 'Normocoradas',
+      notes: 'Aceitou ração, hidratação mantida',
+      recordedAt: NOW,
+      ...overrides,
+    }
+  }
+
   static refreshToken(overrides: Overrides<Record<string, unknown>> = {}) {
     return {
       id: 'refresh-1',
