@@ -91,6 +91,18 @@ describe('ListAppointmentsByDayUseCase', () => {
     expect(result).toHaveLength(2)
   })
 
+  it('deve respeitar o fuso do cliente (tzOffsetMinutes) ao definir o dia', async () => {
+    // 21h30 em Brasília = 00h30Z do dia seguinte
+    await appointmentsRepo.create({ patientId: 'p4', vetId: 'v1', dateTime: new Date('2026-04-02T00:30:00Z'), category: 'EXAM' })
+    const sut = new ListAppointmentsByDayUseCase(appointmentsRepo)
+
+    const utcDay = await sut.execute({ date: '2026-04-01', clinicId: CLINIC_ID })
+    const brDay = await sut.execute({ date: '2026-04-01', clinicId: CLINIC_ID, tzOffsetMinutes: 180 })
+
+    expect(utcDay.map(a => a.patientId)).not.toContain('p4')
+    expect(brDay.map(a => a.patientId)).toContain('p4')
+  })
+
   it('deve filtrar por vetId dentro do dia', async () => {
     const result = await new ListAppointmentsByDayUseCase(appointmentsRepo).execute({ date: '2026-04-01', clinicId: CLINIC_ID, vetId: 'v1' })
     expect(result).toHaveLength(1)
