@@ -1,5 +1,6 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { verifyJwt } from '@shared/middleware/verify-jwt'
+import { verifyRole } from '@shared/middleware/verify-role'
 import { uploadPatientPhotoController } from './controllers/uploadPatientPhotoController'
 import {
   listPatientPhotosController,
@@ -8,6 +9,8 @@ import {
 
 export const photoRoutes: FastifyPluginAsyncZod = async app => {
   app.addHook('onRequest', verifyJwt)
+  // Tutores acessam seus dados só pelo /portal; estas rotas expõem a clínica toda.
+  app.addHook('onRequest', verifyRole('OWNER', 'VET'))
 
   app.post(
     '/upload',
