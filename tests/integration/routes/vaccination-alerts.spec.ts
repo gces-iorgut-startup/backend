@@ -9,7 +9,11 @@ describe('Vaccination Alerts routes (EVO-06)', () => {
   let app: TestApp
 
   const CLINIC_ID = SEED.CLINIC_ID
-  const OTHER_CLINIC_ID = '00000000-0000-0000-0000-000000000099'
+  // Precisa ser um UUID v4 válido: a rota valida o parâmetro com
+  // `z.string().uuid()` antes de comparar as clínicas. Com um UUID inválido a
+  // requisição morre em 422 e o teste de multitenancy nunca chega na guarda
+  // que ele diz exercitar.
+  const OTHER_CLINIC_ID = '99999999-9999-4999-8999-999999999999'
   const NOW = new Date('2026-11-12T12:00:00.000Z')
 
   beforeAll(async () => {
