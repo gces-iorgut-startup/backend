@@ -20,6 +20,7 @@ import { chronicConditionRoutes } from './modules/clinical/infra/http/chronicCon
 import { photoRoutes } from './modules/clinical/infra/http/photoRoutes'
 import { dashboardRoutes } from './modules/dashboard/infra/http/dashboardRoutes'
 import { portalRoutes } from './modules/portal/infra/http/portalRoutes'
+import { budgetRoutes } from './modules/budget/infra/http/budgetRoutes'
 import { testRoutes } from './modules/test/infra/http/testRoutes'
 
 import fastifySwagger from '@fastify/swagger'
@@ -151,6 +152,7 @@ export function createApp() {
   app.register(photoRoutes, { prefix: '/patient-photos' })
   app.register(dashboardRoutes, { prefix: '/dashboard' })
   app.register(portalRoutes, { prefix: '/portal' })
+  app.register(budgetRoutes, { prefix: '/clinics/:clinicId/budgets' })
   app.register(testRoutes, { prefix: '/test' })
 
   // ── Error Handler ─────────────────────────────────────
