@@ -251,6 +251,11 @@ describe('Atributos dos cookies de sessão', () => {
     vi.resetModules()
     vi.stubEnv('COOKIE_SAME_SITE', sameSite)
     vi.stubEnv('NODE_ENV', nodeEnv)
+    if (nodeEnv === 'production') {
+      // O env.ts valida produção: JWT_SECRET forte e sem E2E_TEST_SECRET.
+      vi.stubEnv('JWT_SECRET', 'segredo-de-teste-com-mais-de-16-caracteres')
+      vi.stubEnv('E2E_TEST_SECRET', '')
+    }
     return import('../../../src/shared/auth/session')
   }
 
