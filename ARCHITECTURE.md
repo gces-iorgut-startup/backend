@@ -267,7 +267,7 @@ O `:clinicId` da URL deve ser o da clínica do token (senão `403`). Valores mon
 | Método | Rota | Descrição | Auth |
 |---|---|---|---|
 | `POST` | `/clinics/:clinicId/budgets` | Criar orçamento com itens (`DRAFT` ou `PENDING`) | 🔒 |
-| `GET` | `/clinics/:clinicId/budgets` | Listar paginado (`page`, `limit`) com filtro `?status=` | 🔒 |
+| `GET` | `/clinics/:clinicId/budgets` | Listar paginado (`page`, `limit`) com filtros opcionais `status`, `search` (nome do paciente ou tutor, ≥2 caracteres), `patientId`, `from`/`to` (intervalo sobre a data de emissão, inclusivo) | 🔒 |
 | `GET` | `/clinics/:clinicId/budgets/:id` | Detalhes com itens, paciente e tutor | 🔒 |
 | `PATCH` | `/clinics/:clinicId/budgets/:id/status` | Alterar status (bloqueado após `APPROVED`: `409`) | 🔒 |
 

@@ -189,6 +189,47 @@ describe("Budgets — PostgreSQL integration tests (EVO-01)", () => {
     expect(stored.status).toBe(approve.statusCode === 200 ? "APPROVED" : "REJECTED");
   });
 
+  it("filtra a listagem por busca de nome, paciente e intervalo de datas", async () => {
+    const a = await createClinicWithPatient("CLINICA-A", "52998224725");
+    const { budget } = (await createBudget(a)).json();
+    const luna = await prisma.patient.create({
+      data: { clinicId: a.clinic.id, tutorId: a.tutor.id, name: "Luna", species: "FELINE" },
+    });
+    await app.injectAuth(
+      {
+        method: "POST",
+        url: `/clinics/${a.clinic.id}/budgets`,
+        payload: {
+          patientId: luna.id,
+          tutorId: a.tutor.id,
+          items: [{ description: "Consulta", quantity: 1, unitPrice: 80 }],
+        },
+      },
+      asOwner(a.clinic.id),
+    );
+    const list = (query: string) =>
+      app.injectAuth({ method: "GET", url: `/clinics/${a.clinic.id}/budgets?${query}` }, asOwner(a.clinic.id));
+
+    const byPatient = (await list("search=luna")).json();
+    expect(byPatient.total).toBe(1);
+    expect(byPatient.budgets[0].patient.name).toBe("Luna");
+
+    expect((await list("search=maria")).json().total).toBe(2);
+    expect((await list(`patientId=${a.patient.id}`)).json()).toMatchObject({
+      total: 1,
+      budgets: [{ id: budget.id }],
+    });
+
+    const now = Date.now();
+    const around = await list(
+      `from=${new Date(now - 60_000).toISOString()}&to=${new Date(now + 60_000).toISOString()}`,
+    );
+    expect(around.json().total).toBe(2);
+
+    const tomorrow = await list(`from=${new Date(now + 86_400_000).toISOString()}`);
+    expect(tomorrow.json().total).toBe(0);
+  });
+
   it("remove os itens em cascata ao excluir o orçamento", async () => {
     const a = await createClinicWithPatient("CLINICA-A", "52998224725");
     const { budget } = (await createBudget(a)).json();

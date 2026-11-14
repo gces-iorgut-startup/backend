@@ -48,13 +48,22 @@ export class InMemoryBudgetsRepository implements IBudgetsRepository {
     return stored ? this.hydrate(stored) : null
   }
 
-  async findManyByClinic({ clinicId, status, page, limit }: ListBudgetsDTO): Promise<{ budgets: BudgetRecord[]; total: number }> {
-    const filtered = this.items
-      .filter((b) => b.clinicId === clinicId && (!status || b.status === status))
+  async findManyByClinic({ clinicId, status, search, patientId, from, to, page, limit }: ListBudgetsDTO): Promise<{ budgets: BudgetRecord[]; total: number }> {
+    const candidates = this.items.filter(
+      (b) =>
+        b.clinicId === clinicId
+        && (!status || b.status === status)
+        && (!patientId || b.patientId === patientId)
+        && (!from || b.createdAt >= from)
+        && (!to || b.createdAt <= to),
+    )
+    // Busca por nome exige os relacionamentos; hidrata antes de filtrar e paginar.
+    const hydrated = await Promise.all(candidates.map((b) => this.hydrate(b)))
+    const term = search?.toLowerCase()
+    const matched = hydrated
+      .filter((b) => !term || b.patient.name.toLowerCase().includes(term) || b.tutor.fullName.toLowerCase().includes(term))
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-    const pageItems = filtered.slice((page - 1) * limit, page * limit)
-    const budgets = await Promise.all(pageItems.map((b) => this.hydrate(b)))
-    return { budgets, total: filtered.length }
+    return { budgets: matched.slice((page - 1) * limit, page * limit), total: matched.length }
   }
 
   async updateStatus(

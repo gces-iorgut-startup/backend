@@ -30,11 +30,20 @@ export const createBudgetBodySchema = z.object({
   status: z.enum(BUDGET_INITIAL_STATUSES).optional(),
 })
 
-export const listBudgetsQuerySchema = z.object({
-  status: z.enum(BUDGET_STATUSES).optional(),
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().positive().max(100).default(20),
-})
+export const listBudgetsQuerySchema = z
+  .object({
+    status: z.enum(BUDGET_STATUSES).optional(),
+    search: z.string().trim().min(2).max(100).optional(),
+    patientId: z.string().uuid().optional(),
+    from: z.coerce.date().optional(),
+    to: z.coerce.date().optional(),
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().max(100).default(20),
+  })
+  .refine((query) => !query.from || !query.to || query.from <= query.to, {
+    message: 'A data inicial não pode ser posterior à data final.',
+    path: ['from'],
+  })
 
 export const updateBudgetStatusBodySchema = z.object({
   status: z.enum(BUDGET_STATUSES),

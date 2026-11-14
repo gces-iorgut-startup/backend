@@ -210,6 +210,63 @@ describe('ListClinicBudgetsUseCase', () => {
   })
 })
 
+describe('ListClinicBudgetsUseCase — filtros', () => {
+  it('busca por nome do paciente ou do tutor, sem diferenciar maiúsculas', async () => {
+    const ctx = setup()
+    const maria = await seed(ctx)
+    const joao = await ctx.tutors.create({ clinicId: CLINIC_ID, fullName: 'João Souza', cpf: '39053344705', phone: '61988887777' })
+    const luna = await ctx.patients.create({ clinicId: CLINIC_ID, name: 'Luna', tutorId: joao.id, species: 'FELINE', sex: 'MALE' })
+    await ctx.create.execute(input({ clinicId: CLINIC_ID, patientId: maria.patient.id, tutorId: maria.tutor.id }))
+    await ctx.create.execute(input({ clinicId: CLINIC_ID, patientId: luna.id, tutorId: joao.id }))
+
+    const byPatient = await ctx.list.execute({ clinicId: CLINIC_ID, search: 'LUNA', page: 1, limit: 20 })
+    expect(byPatient.total).toBe(1)
+    expect(byPatient.budgets[0].patient.name).toBe('Luna')
+
+    const byTutor = await ctx.list.execute({ clinicId: CLINIC_ID, search: 'maria', page: 1, limit: 20 })
+    expect(byTutor.total).toBe(1)
+    expect(byTutor.budgets[0].tutor.fullName).toBe('Maria')
+  })
+
+  it('filtra por paciente e por intervalo de datas (limites inclusivos)', async () => {
+    const ctx = setup()
+    const { tutor, patient } = await seed(ctx)
+    const luna = await ctx.patients.create({ clinicId: CLINIC_ID, name: 'Luna', tutorId: tutor.id, species: 'FELINE', sex: 'MALE' })
+    await ctx.create.execute(input({ clinicId: CLINIC_ID, patientId: patient.id, tutorId: tutor.id }))
+    await ctx.create.execute(input({ clinicId: CLINIC_ID, patientId: luna.id, tutorId: tutor.id }))
+    ctx.budgets.items[0].createdAt = new Date('2026-01-10T12:00:00.000Z')
+    ctx.budgets.items[1].createdAt = new Date('2026-02-10T12:00:00.000Z')
+
+    const onlyLuna = await ctx.list.execute({ clinicId: CLINIC_ID, patientId: luna.id, page: 1, limit: 20 })
+    expect(onlyLuna.total).toBe(1)
+
+    const exactBound = await ctx.list.execute({
+      clinicId: CLINIC_ID,
+      from: new Date('2026-01-10T12:00:00.000Z'),
+      to: new Date('2026-01-10T12:00:00.000Z'),
+      page: 1,
+      limit: 20,
+    })
+    expect(exactBound.total).toBe(1)
+    expect(exactBound.budgets[0].patient.id).toBe(patient.id)
+  })
+
+  it('combina busca e status, mantendo o isolamento por clínica', async () => {
+    const ctx = setup()
+    const { tutor, patient } = await seed(ctx)
+    await seed(ctx, OTHER_CLINIC_ID)
+    const draft = await ctx.create.execute(input({ clinicId: CLINIC_ID, patientId: patient.id, tutorId: tutor.id }))
+    await ctx.create.execute(input({ clinicId: CLINIC_ID, patientId: patient.id, tutorId: tutor.id }, { status: 'PENDING' }))
+    await ctx.updateStatus.execute({ id: draft.id, clinicId: CLINIC_ID, status: 'PENDING' })
+
+    const result = await ctx.list.execute({ clinicId: CLINIC_ID, search: 'rex', status: 'PENDING', page: 1, limit: 20 })
+    expect(result.total).toBe(2)
+
+    const other = await ctx.list.execute({ clinicId: OTHER_CLINIC_ID, search: 'rex', page: 1, limit: 20 })
+    expect(other.total).toBe(0)
+  })
+})
+
 describe('UpdateBudgetStatusUseCase', () => {
   let ctx: ReturnType<typeof setup>
   let base: { clinicId: string; patientId: string; tutorId: string }

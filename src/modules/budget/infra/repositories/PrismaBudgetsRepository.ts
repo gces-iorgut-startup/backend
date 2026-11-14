@@ -53,8 +53,21 @@ export class PrismaBudgetsRepository implements IBudgetsRepository {
     return row ? toRecord(row) : null
   }
 
-  async findManyByClinic({ clinicId, status, page, limit }: ListBudgetsDTO): Promise<{ budgets: BudgetRecord[]; total: number }> {
-    const where: Prisma.BudgetWhereInput = { clinicId, ...(status ? { status } : {}) }
+  async findManyByClinic({ clinicId, status, search, patientId, from, to, page, limit }: ListBudgetsDTO): Promise<{ budgets: BudgetRecord[]; total: number }> {
+    const where: Prisma.BudgetWhereInput = {
+      clinicId,
+      ...(status ? { status } : {}),
+      ...(patientId ? { patientId } : {}),
+      ...(from || to ? { createdAt: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } } : {}),
+      ...(search
+        ? {
+            OR: [
+              { patient: { name: { contains: search, mode: 'insensitive' as const } } },
+              { tutor: { fullName: { contains: search, mode: 'insensitive' as const } } },
+            ],
+          }
+        : {}),
+    }
     const [rows, total] = await Promise.all([
       prisma.budget.findMany({
         where,

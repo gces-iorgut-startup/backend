@@ -145,6 +145,47 @@ describe('Budget routes', () => {
       }))
     })
 
+    it('repassa busca, paciente e intervalo de datas ao repositório', async () => {
+      prismaMock.budget.findMany.mockResolvedValue([] as never)
+      prismaMock.budget.count.mockResolvedValue(0)
+
+      const response = await app.injectAuth({
+        method: 'GET',
+        url: `${budgetsUrl}?search=rex&patientId=${SEED.PATIENT_ID}&from=2026-01-01T00:00:00.000Z&to=2026-01-31T23:59:59.999Z`,
+      })
+
+      expect(response.statusCode).toBe(HTTP.OK)
+      expect(prismaMock.budget.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({
+          clinicId: SEED.CLINIC_ID,
+          patientId: SEED.PATIENT_ID,
+          createdAt: { gte: new Date('2026-01-01T00:00:00.000Z'), lte: new Date('2026-01-31T23:59:59.999Z') },
+          OR: [
+            { patient: { name: { contains: 'rex', mode: 'insensitive' } } },
+            { tutor: { fullName: { contains: 'rex', mode: 'insensitive' } } },
+          ],
+        }),
+      }))
+    })
+
+    it('retorna 422 quando a data inicial é posterior à final', async () => {
+      const response = await app.injectAuth({
+        method: 'GET',
+        url: `${budgetsUrl}?from=2026-02-01T00:00:00.000Z&to=2026-01-01T00:00:00.000Z`,
+      })
+      expect(response.statusCode).toBe(HTTP.UNPROCESSABLE)
+    })
+
+    it('retorna 422 para busca com um único caractere', async () => {
+      const response = await app.injectAuth({ method: 'GET', url: `${budgetsUrl}?search=a` })
+      expect(response.statusCode).toBe(HTTP.UNPROCESSABLE)
+    })
+
+    it('retorna 422 para patientId que não é UUID', async () => {
+      const response = await app.injectAuth({ method: 'GET', url: `${budgetsUrl}?patientId=abc` })
+      expect(response.statusCode).toBe(HTTP.UNPROCESSABLE)
+    })
+
     it('retorna 422 para status de filtro inválido', async () => {
       const response = await app.injectAuth({ method: 'GET', url: `${budgetsUrl}?status=NOPE` })
       expect(response.statusCode).toBe(HTTP.UNPROCESSABLE)

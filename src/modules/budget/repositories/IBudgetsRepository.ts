@@ -48,6 +48,12 @@ export interface CreateBudgetDTO {
 export interface ListBudgetsDTO {
   clinicId: string
   status?: BudgetStatus
+  // Nome do paciente OU do tutor (contém, case-insensitive)
+  search?: string
+  patientId?: string
+  // Intervalo inclusivo sobre createdAt
+  from?: Date
+  to?: Date
   page: number
   limit: number
 }
