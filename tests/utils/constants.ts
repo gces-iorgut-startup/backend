@@ -43,6 +43,9 @@ export const SEED = {
   VACCINATION_ID: '99999999-9999-4999-8999-999999999999',
   EXAM_ID: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
   CHRONIC_CONDITION_ID: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  HOSPITALIZATION_ID: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+  HOSPITALIZATION_EVOLUTION_ID: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+  OTHER_CLINIC_ID: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
 } as const
 
 export const FAKE = {

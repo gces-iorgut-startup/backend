@@ -18,6 +18,7 @@ import { vaccinationRoutes } from './modules/clinical/infra/http/vaccinationRout
 import { examRoutes } from './modules/clinical/infra/http/examRoutes'
 import { chronicConditionRoutes } from './modules/clinical/infra/http/chronicConditionRoutes'
 import { photoRoutes } from './modules/clinical/infra/http/photoRoutes'
+import { hospitalizationRoutes } from './modules/clinical/infra/http/hospitalizationRoutes'
 import { dashboardRoutes } from './modules/dashboard/infra/http/dashboardRoutes'
 import { portalRoutes } from './modules/portal/infra/http/portalRoutes'
 import { testRoutes } from './modules/test/infra/http/testRoutes'
@@ -149,6 +150,7 @@ export function createApp() {
   app.register(examRoutes, { prefix: '/exams' })
   app.register(chronicConditionRoutes, { prefix: '/chronic-conditions' })
   app.register(photoRoutes, { prefix: '/patient-photos' })
+  app.register(hospitalizationRoutes, { prefix: '/clinics/:clinicId/hospitalizations' })
   app.register(dashboardRoutes, { prefix: '/dashboard' })
   app.register(portalRoutes, { prefix: '/portal' })
   app.register(testRoutes, { prefix: '/test' })

@@ -22,6 +22,7 @@ model Clinic {
   users    User[]
   tutors   Tutor[]
   patients Patient[]
+  hospitalizations Hospitalization[] // EVO-05
 
   @@map("clinics")
 }
@@ -46,6 +47,9 @@ model User {
   appointments    Appointment[]    @relation("vet_appointments")
   clinicalRecords ClinicalRecord[]
   tutorAccount    Tutor?
+  // EVO-05 — duas relacoes distintas: quem admitiu e quem registrou cada evolucao.
+  admittedHospitalizations Hospitalization[]          @relation("admitted_hospitalizations")
+  recordedEvolutions       HospitalizationEvolution[] @relation("recorded_evolutions")
 
   @@map("users")
 }
@@ -144,6 +148,7 @@ model Patient {
   examFiles       ExamFile[]       // US12 — exames anexados
   chronicConditions ChronicCondition[] // CLI-02 — Patologias crônicas
   photos          PatientPhoto[]   // CLI-05 — Galeria de fotos do paciente
+  hospitalizations Hospitalization[] // EVO-05 — Internações
 
   @@map("patients")
 }
@@ -292,4 +297,55 @@ model PatientPhoto {
   patient Patient @relation(fields: [patientId], references: [id])
 
   @@map("patient_photos")
+}
+
+// ── Hospitalizations (EVO-05) ────────────────────────
+
+model Hospitalization {
+  id              String                @id @default(uuid())
+  clinicId        String                @map("clinic_id")
+  patientId       String                @map("patient_id")
+  admittedByVetId String                @map("admitted_by_vet_id")
+  bedIdentifier   String                @map("bed_identifier") // ex: "Baia 03", "UTI 01"
+  reason          String                @db.Text
+  status          HospitalizationStatus @default(ADMITTED)
+  admittedAt      DateTime              @default(now()) @map("admitted_at")
+  dischargedAt    DateTime?             @map("discharged_at")
+  dischargeNotes  String?               @map("discharge_notes") @db.Text
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+
+  clinic        Clinic                     @relation(fields: [clinicId], references: [id])
+  patient       Patient                    @relation(fields: [patientId], references: [id])
+  admittedByVet User                       @relation("admitted_hospitalizations", fields: [admittedByVetId], references: [id])
+  evolutions    HospitalizationEvolution[]
+
+  // O painel de leitos filtra por clinica e status a cada carregamento.
+  @@index([clinicId, status])
+  @@map("hospitalizations")
+}
+
+model HospitalizationEvolution {
+  id                String   @id @default(uuid())
+  hospitalizationId String   @map("hospitalization_id")
+  recordedByVetId   String   @map("recorded_by_vet_id")
+  temperature       Float?   // °C
+  heartRate         Int?     @map("heart_rate")       // bpm
+  respiratoryRate   Int?     @map("respiratory_rate") // mpm
+  mucousMembranes   String?  @map("mucous_membranes") // ex: "Normocoradas", "Pálidas"
+  notes             String   @db.Text                 // alimentação, hidratação, medicações
+  recordedAt        DateTime @default(now()) @map("recorded_at")
+
+  hospitalization Hospitalization @relation(fields: [hospitalizationId], references: [id], onDelete: Cascade)
+  recordedByVet   User            @relation("recorded_evolutions", fields: [recordedByVetId], references: [id])
+
+  // A timeline sempre le as evolucoes de uma internacao em ordem cronologica.
+  @@index([hospitalizationId, recordedAt])
+  @@map("hospitalization_evolutions")
+}
+
+enum HospitalizationStatus {
+  ADMITTED   // internado
+  CRITICAL   // internado, em estado critico
+  DISCHARGED // alta concedida
 }
