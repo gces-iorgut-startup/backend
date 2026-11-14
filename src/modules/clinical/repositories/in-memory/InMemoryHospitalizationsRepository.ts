@@ -8,14 +8,30 @@ import type {
   HospitalizationEvolution,
   HospitalizationWithPatient,
   IHospitalizationsRepository,
+  OpenHospitalizationStatus,
 } from '../IHospitalizationsRepository'
-import { OPEN_HOSPITALIZATION_STATUSES } from '../IHospitalizationsRepository'
+import {
+  OPEN_HOSPITALIZATION_STATUSES,
+  OpenHospitalizationConflictError,
+} from '../IHospitalizationsRepository'
 
 export class InMemoryHospitalizationsRepository implements IHospitalizationsRepository {
   public items: Hospitalization[] = []
   public evolutions: HospitalizationEvolution[] = []
 
+  private isOpen(hospitalization: Hospitalization): boolean {
+    return OPEN_HOSPITALIZATION_STATUSES.includes(
+      hospitalization.status as OpenHospitalizationStatus
+    )
+  }
+
   async create(data: CreateHospitalizationDTO): Promise<Hospitalization> {
+    // Espelha o índice único parcial do banco, para o in-memory não aceitar o
+    // que o Postgres recusaria.
+    if (await this.findOpenByPatient(data.patientId)) {
+      throw new OpenHospitalizationConflictError()
+    }
+
     const now = new Date()
     const hospitalization: Hospitalization = {
       id: randomUUID(),
@@ -37,13 +53,7 @@ export class InMemoryHospitalizationsRepository implements IHospitalizationsRepo
 
   async findOpenByPatient(patientId: string): Promise<Hospitalization | null> {
     return (
-      this.items.find(
-        item =>
-          item.patientId === patientId &&
-          OPEN_HOSPITALIZATION_STATUSES.includes(
-            item.status as (typeof OPEN_HOSPITALIZATION_STATUSES)[number]
-          )
-      ) ?? null
+      this.items.find(item => item.patientId === patientId && this.isOpen(item)) ?? null
     )
   }
 
@@ -66,20 +76,19 @@ export class InMemoryHospitalizationsRepository implements IHospitalizationsRepo
 
   async listActiveByClinic(clinicId: string): Promise<HospitalizationWithPatient[]> {
     return this.items
-      .filter(
-        item =>
-          item.clinicId === clinicId &&
-          OPEN_HOSPITALIZATION_STATUSES.includes(
-            item.status as (typeof OPEN_HOSPITALIZATION_STATUSES)[number]
-          )
-      )
+      .filter(item => item.clinicId === clinicId && this.isOpen(item))
       // Só ordem cronológica, igual ao Prisma. A prioridade por criticidade
       // é aplicada no caso de uso, para os dois repositórios concordarem.
       .sort((a, b) => a.admittedAt.getTime() - b.admittedAt.getTime())
   }
 
-  async discharge(id: string, data: DischargeHospitalizationDTO): Promise<Hospitalization> {
-    const index = this.items.findIndex(item => item.id === id)
+  async discharge(
+    id: string,
+    data: DischargeHospitalizationDTO
+  ): Promise<Hospitalization | null> {
+    const index = this.items.findIndex(item => item.id === id && this.isOpen(item))
+    if (index < 0) return null
+
     this.items[index] = {
       ...this.items[index],
       status: 'DISCHARGED',
@@ -90,7 +99,23 @@ export class InMemoryHospitalizationsRepository implements IHospitalizationsRepo
     return this.items[index]
   }
 
-  async addEvolution(data: CreateHospitalizationEvolutionDTO): Promise<HospitalizationEvolution> {
+  async updateStatus(
+    id: string,
+    status: OpenHospitalizationStatus
+  ): Promise<Hospitalization | null> {
+    const index = this.items.findIndex(item => item.id === id && this.isOpen(item))
+    if (index < 0) return null
+
+    this.items[index] = { ...this.items[index], status, updatedAt: new Date() }
+    return this.items[index]
+  }
+
+  async addEvolution(
+    data: CreateHospitalizationEvolutionDTO
+  ): Promise<HospitalizationEvolution | null> {
+    const hospitalization = this.items.find(item => item.id === data.hospitalizationId)
+    if (!hospitalization || !this.isOpen(hospitalization)) return null
+
     const evolution: HospitalizationEvolution = {
       id: randomUUID(),
       hospitalizationId: data.hospitalizationId,

@@ -1,5 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
 import { z } from 'zod'
+import { OPEN_HOSPITALIZATION_STATUSES } from '../../../repositories/IHospitalizationsRepository'
 import { makeAdmitPatientUseCase } from '../../../useCases/factories/makeHospitalizationUseCases'
 import { toHospitalizationResponse } from '../hospitalizationPresenter'
 
@@ -11,6 +12,8 @@ export const admitPatientBodySchema = z.object({
   patientId: z.string().uuid(),
   bedIdentifier: z.string().trim().min(1).max(60),
   reason: z.string().trim().min(3).max(2000),
+  // Permite admitir já como CRITICAL. Em branco, o caso de uso usa ADMITTED.
+  status: z.enum(OPEN_HOSPITALIZATION_STATUSES).optional(),
 })
 
 export async function admitPatientController(

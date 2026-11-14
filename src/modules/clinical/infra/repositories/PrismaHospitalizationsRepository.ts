@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client'
 import { prisma } from '../../../../config/prisma'
 import type {
   CreateHospitalizationDTO,
@@ -8,8 +9,12 @@ import type {
   HospitalizationEvolution,
   HospitalizationWithPatient,
   IHospitalizationsRepository,
+  OpenHospitalizationStatus,
 } from '../../repositories/IHospitalizationsRepository'
-import { OPEN_HOSPITALIZATION_STATUSES } from '../../repositories/IHospitalizationsRepository'
+import {
+  OPEN_HOSPITALIZATION_STATUSES,
+  OpenHospitalizationConflictError,
+} from '../../repositories/IHospitalizationsRepository'
 
 const PATIENT_CARD_SELECT = {
   id: true,
@@ -22,7 +27,17 @@ const VET_SELECT = { id: true, name: true } as const
 
 export class PrismaHospitalizationsRepository implements IHospitalizationsRepository {
   async create(data: CreateHospitalizationDTO): Promise<Hospitalization> {
-    return prisma.hospitalization.create({ data })
+    try {
+      return await prisma.hospitalization.create({ data })
+    } catch (error) {
+      // P2002 = violação de unicidade. O índice parcial criado na migration
+      // só permite uma internação em aberto por paciente, então esta é a
+      // corrida que a checagem do caso de uso não consegue cobrir.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new OpenHospitalizationConflictError()
+      }
+      throw error
+    }
   }
 
   async findOpenByPatient(patientId: string): Promise<Hospitalization | null> {
@@ -64,18 +79,54 @@ export class PrismaHospitalizationsRepository implements IHospitalizationsReposi
     })
   }
 
-  async discharge(id: string, data: DischargeHospitalizationDTO): Promise<Hospitalization> {
-    return prisma.hospitalization.update({
-      where: { id },
+  async discharge(
+    id: string,
+    data: DischargeHospitalizationDTO
+  ): Promise<Hospitalization | null> {
+    // `updateMany` com o status na cláusula where: o banco decide se a
+    // internação ainda estava aberta. Com `update` simples, duas altas
+    // simultâneas passariam as duas e a segunda sobrescreveria a data da
+    // primeira.
+    const { count } = await prisma.hospitalization.updateMany({
+      where: { id, status: { in: [...OPEN_HOSPITALIZATION_STATUSES] } },
       data: {
         status: 'DISCHARGED',
         dischargedAt: data.dischargedAt,
         dischargeNotes: data.dischargeNotes ?? null,
       },
     })
+
+    if (count === 0) return null
+
+    return prisma.hospitalization.findUniqueOrThrow({ where: { id } })
   }
 
-  async addEvolution(data: CreateHospitalizationEvolutionDTO): Promise<HospitalizationEvolution> {
+  async updateStatus(
+    id: string,
+    status: OpenHospitalizationStatus
+  ): Promise<Hospitalization | null> {
+    const { count } = await prisma.hospitalization.updateMany({
+      where: { id, status: { in: [...OPEN_HOSPITALIZATION_STATUSES] } },
+      data: { status },
+    })
+
+    if (count === 0) return null
+
+    return prisma.hospitalization.findUniqueOrThrow({ where: { id } })
+  }
+
+  async addEvolution(
+    data: CreateHospitalizationEvolutionDTO
+  ): Promise<HospitalizationEvolution | null> {
+    // A internação precisa estar aberta no instante da escrita, senão uma
+    // aferição entraria depois da alta.
+    const open = await prisma.hospitalization.findFirst({
+      where: { id: data.hospitalizationId, status: { in: [...OPEN_HOSPITALIZATION_STATUSES] } },
+      select: { id: true },
+    })
+
+    if (!open) return null
+
     return prisma.hospitalizationEvolution.create({ data })
   }
 }

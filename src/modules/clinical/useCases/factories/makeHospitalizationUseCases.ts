@@ -5,6 +5,7 @@ import { AdmitPatientUseCase } from '../hospitalizations/admitPatientUseCase'
 import { DischargePatientUseCase } from '../hospitalizations/dischargePatientUseCase'
 import { GetHospitalizationDetailsUseCase } from '../hospitalizations/getHospitalizationDetailsUseCase'
 import { ListActiveHospitalizationsUseCase } from '../hospitalizations/listActiveHospitalizationsUseCase'
+import { UpdateHospitalizationStatusUseCase } from '../hospitalizations/updateHospitalizationStatusUseCase'
 
 export function makeAdmitPatientUseCase() {
   return new AdmitPatientUseCase(
@@ -27,4 +28,8 @@ export function makeAddHospitalizationEvolutionUseCase() {
 
 export function makeDischargePatientUseCase() {
   return new DischargePatientUseCase(new PrismaHospitalizationsRepository())
+}
+
+export function makeUpdateHospitalizationStatusUseCase() {
+  return new UpdateHospitalizationStatusUseCase(new PrismaHospitalizationsRepository())
 }

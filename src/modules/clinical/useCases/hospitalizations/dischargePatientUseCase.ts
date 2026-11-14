@@ -34,9 +34,18 @@ export class DischargePatientUseCase {
       throw new AppError('Esta internação já teve alta concedida.', 400)
     }
 
-    return this.hospitalizationsRepository.discharge(hospitalizationId, {
+    const discharged = await this.hospitalizationsRepository.discharge(hospitalizationId, {
       dischargedAt: now,
       dischargeNotes: dischargeNotes?.trim() || null,
     })
+
+    // `null` quando outra requisição concedeu a alta entre a busca e a
+    // escrita. A condição é avaliada pelo banco, então duas altas simultâneas
+    // não sobrescrevem a data da primeira.
+    if (!discharged) {
+      throw new AppError('Esta internação já teve alta concedida.', 400)
+    }
+
+    return discharged
   }
 }

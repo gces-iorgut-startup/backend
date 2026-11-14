@@ -31,6 +31,11 @@ import {
   dischargePatientController,
   dischargePatientParamsSchema,
 } from './controllers/dischargePatientController'
+import {
+  updateHospitalizationStatusBodySchema,
+  updateHospitalizationStatusController,
+  updateHospitalizationStatusParamsSchema,
+} from './controllers/updateHospitalizationStatusController'
 
 /**
  * O caminho destas rotas carrega `:clinicId`, diferente do resto da API, que
@@ -52,6 +57,11 @@ async function verifyClinicScope(
 
 export const hospitalizationRoutes: FastifyPluginAsyncZod = async app => {
   app.addHook('onRequest', verifyJwt)
+  // Internação é prontuário: nem a leitura é aberta ao tutor, porque o painel
+  // e a timeline mostram paciente, motivo e evolução clínica de toda a
+  // clínica. Mesmo padrão do vaccinationRoutes — a guarda cobre o plugin
+  // inteiro, não só a escrita.
+  app.addHook('onRequest', verifyRole('OWNER', 'VET'))
   app.addHook('preHandler', verifyClinicScope)
 
   app.get(
@@ -82,54 +92,63 @@ export const hospitalizationRoutes: FastifyPluginAsyncZod = async app => {
     getHospitalizationDetailsController
   )
 
-  app.register(async writeRoutes => {
-    // Quem interna, registra evolução e dá alta é equipe clínica. O perfil
-    // TUTOR nunca escreve aqui.
-    writeRoutes.addHook('preHandler', verifyRole('OWNER', 'VET'))
-
-    writeRoutes.post(
-      '/',
-      {
-        schema: {
-          summary: 'Admit Patient',
-          tags: ['Hospitalizations'],
-          params: admitPatientParamsSchema,
-          body: admitPatientBodySchema,
-          response: { 201: hospitalizationResponseSchema },
-          security: [{ bearerAuth: [] }],
-        },
+  app.post(
+    '/',
+    {
+      schema: {
+        summary: 'Admit Patient',
+        tags: ['Hospitalizations'],
+        params: admitPatientParamsSchema,
+        body: admitPatientBodySchema,
+        response: { 201: hospitalizationResponseSchema },
+        security: [{ bearerAuth: [] }],
       },
-      admitPatientController
-    )
+    },
+    admitPatientController
+  )
 
-    writeRoutes.post(
-      '/:id/evolutions',
-      {
-        schema: {
-          summary: 'Add Hospitalization Evolution',
-          tags: ['Hospitalizations'],
-          params: addHospitalizationEvolutionParamsSchema,
-          body: addHospitalizationEvolutionBodySchema,
-          response: { 201: hospitalizationEvolutionResponseSchema },
-          security: [{ bearerAuth: [] }],
-        },
+  app.post(
+    '/:id/evolutions',
+    {
+      schema: {
+        summary: 'Add Hospitalization Evolution',
+        tags: ['Hospitalizations'],
+        params: addHospitalizationEvolutionParamsSchema,
+        body: addHospitalizationEvolutionBodySchema,
+        response: { 201: hospitalizationEvolutionResponseSchema },
+        security: [{ bearerAuth: [] }],
       },
-      addHospitalizationEvolutionController
-    )
+    },
+    addHospitalizationEvolutionController
+  )
 
-    writeRoutes.patch(
-      '/:id/discharge',
-      {
-        schema: {
-          summary: 'Discharge Patient',
-          tags: ['Hospitalizations'],
-          params: dischargePatientParamsSchema,
-          body: dischargePatientBodySchema,
-          response: { 200: hospitalizationResponseSchema },
-          security: [{ bearerAuth: [] }],
-        },
+  app.patch(
+    '/:id/status',
+    {
+      schema: {
+        summary: 'Update Hospitalization Status (ADMITTED | CRITICAL)',
+        tags: ['Hospitalizations'],
+        params: updateHospitalizationStatusParamsSchema,
+        body: updateHospitalizationStatusBodySchema,
+        response: { 200: hospitalizationResponseSchema },
+        security: [{ bearerAuth: [] }],
       },
-      dischargePatientController
-    )
-  })
+    },
+    updateHospitalizationStatusController
+  )
+
+  app.patch(
+    '/:id/discharge',
+    {
+      schema: {
+        summary: 'Discharge Patient',
+        tags: ['Hospitalizations'],
+        params: dischargePatientParamsSchema,
+        body: dischargePatientBodySchema,
+        response: { 200: hospitalizationResponseSchema },
+        security: [{ bearerAuth: [] }],
+      },
+    },
+    dischargePatientController
+  )
 }

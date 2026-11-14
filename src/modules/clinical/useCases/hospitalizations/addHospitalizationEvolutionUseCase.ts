@@ -51,7 +51,7 @@ export class AddHospitalizationEvolutionUseCase {
       throw new AppError('Descreva a evolução do paciente.', 400)
     }
 
-    return this.hospitalizationsRepository.addEvolution({
+    const evolution = await this.hospitalizationsRepository.addEvolution({
       hospitalizationId,
       recordedByVetId,
       temperature,
@@ -60,5 +60,15 @@ export class AddHospitalizationEvolutionUseCase {
       mucousMembranes: mucousMembranes?.trim() || null,
       notes: trimmedNotes,
     })
+
+    // `null` quando a alta entrou entre a checagem e a escrita.
+    if (!evolution) {
+      throw new AppError(
+        'Não é possível registrar evolução em uma internação com alta concedida.',
+        400
+      )
+    }
+
+    return evolution
   }
 }

@@ -7,6 +7,7 @@ import { AdmitPatientUseCase } from './useCases/hospitalizations/admitPatientUse
 import { DischargePatientUseCase } from './useCases/hospitalizations/dischargePatientUseCase'
 import { GetHospitalizationDetailsUseCase } from './useCases/hospitalizations/getHospitalizationDetailsUseCase'
 import { ListActiveHospitalizationsUseCase } from './useCases/hospitalizations/listActiveHospitalizationsUseCase'
+import { UpdateHospitalizationStatusUseCase } from './useCases/hospitalizations/updateHospitalizationStatusUseCase'
 import { AppError } from '../../shared/errors/app-error'
 
 const CLINIC_ID = 'clinic-1'
@@ -20,6 +21,7 @@ describe('Hospitalizations Module (EVO-05)', () => {
   let detailsUseCase: GetHospitalizationDetailsUseCase
   let addEvolutionUseCase: AddHospitalizationEvolutionUseCase
   let dischargeUseCase: DischargePatientUseCase
+  let updateStatusUseCase: UpdateHospitalizationStatusUseCase
   let vetId: string
 
   async function createPatient(clinicId = CLINIC_ID, name = 'Rex') {
@@ -52,6 +54,7 @@ describe('Hospitalizations Module (EVO-05)', () => {
     detailsUseCase = new GetHospitalizationDetailsUseCase(hospitalizationsRepository)
     addEvolutionUseCase = new AddHospitalizationEvolutionUseCase(hospitalizationsRepository)
     dischargeUseCase = new DischargePatientUseCase(hospitalizationsRepository)
+    updateStatusUseCase = new UpdateHospitalizationStatusUseCase(hospitalizationsRepository)
   })
 
   describe('AdmitPatientUseCase', () => {
@@ -80,12 +83,45 @@ describe('Hospitalizations Module (EVO-05)', () => {
       // CRITICAL continua ocupando leito; só a alta libera o paciente.
       const patient = await createPatient()
       const hospitalization = await admit(patient.id)
-      hospitalizationsRepository.items[0] = {
-        ...hospitalization,
+      await updateStatusUseCase.execute({
+        hospitalizationId: hospitalization.id,
+        clinicId: CLINIC_ID,
         status: 'CRITICAL',
-      }
+      })
 
       await expect(admit(patient.id)).rejects.toMatchObject({ statusCode: 409 })
+    })
+
+    it('aceita admitir já como CRITICAL', async () => {
+      const patient = await createPatient()
+
+      const hospitalization = await admitUseCase.execute({
+        clinicId: CLINIC_ID,
+        patientId: patient.id,
+        admittedByVetId: vetId,
+        bedIdentifier: 'UTI 01',
+        reason: 'Choque hipovolêmico',
+        status: 'CRITICAL',
+      })
+
+      expect(hospitalization.status).toBe('CRITICAL')
+    })
+
+    it('traduz conflito do banco em 409 mesmo sem a checagem prévia pegar', async () => {
+      // Simula a corrida: o repositório recusa como o índice único parcial do
+      // Postgres faria, e o caso de uso precisa devolver 409, não 500.
+      const patient = await createPatient()
+      await admit(patient.id)
+
+      await expect(
+        hospitalizationsRepository.create({
+          clinicId: CLINIC_ID,
+          patientId: patient.id,
+          admittedByVetId: vetId,
+          bedIdentifier: 'Baia 9',
+          reason: 'segunda tentativa simultânea',
+        })
+      ).rejects.toThrow('já possui uma internação em aberto')
     })
 
     it('libera nova admissão depois da alta', async () => {
@@ -161,7 +197,13 @@ describe('Hospitalizations Module (EVO-05)', () => {
       const critico = await createPatient(CLINIC_ID, 'Crítico')
       await admit(estavel.id)
       const second = await admit(critico.id)
-      hospitalizationsRepository.items[1] = { ...second, status: 'CRITICAL' }
+      // Pelo caso de uso, não forçando o repositório: senão o teste passaria
+      // mesmo que não houvesse como marcar o paciente como crítico.
+      await updateStatusUseCase.execute({
+        hospitalizationId: second.id,
+        clinicId: CLINIC_ID,
+        status: 'CRITICAL',
+      })
 
       const items = await listActiveUseCase.execute({ clinicId: CLINIC_ID })
 
@@ -316,6 +358,57 @@ describe('Hospitalizations Module (EVO-05)', () => {
           clinicId: OTHER_CLINIC_ID,
           recordedByVetId: vetId,
           notes: 'Aferição indevida',
+        })
+      ).rejects.toMatchObject({ statusCode: 404 })
+    })
+  })
+
+  describe('UpdateHospitalizationStatusUseCase', () => {
+    it('marca como CRITICAL e volta para ADMITTED', async () => {
+      const patient = await createPatient()
+      const hospitalization = await admit(patient.id)
+
+      const critical = await updateStatusUseCase.execute({
+        hospitalizationId: hospitalization.id,
+        clinicId: CLINIC_ID,
+        status: 'CRITICAL',
+      })
+      expect(critical.status).toBe('CRITICAL')
+
+      const stable = await updateStatusUseCase.execute({
+        hospitalizationId: hospitalization.id,
+        clinicId: CLINIC_ID,
+        status: 'ADMITTED',
+      })
+      expect(stable.status).toBe('ADMITTED')
+    })
+
+    it('recusa troca de status depois da alta', async () => {
+      const patient = await createPatient()
+      const hospitalization = await admit(patient.id)
+      await dischargeUseCase.execute({
+        hospitalizationId: hospitalization.id,
+        clinicId: CLINIC_ID,
+      })
+
+      await expect(
+        updateStatusUseCase.execute({
+          hospitalizationId: hospitalization.id,
+          clinicId: CLINIC_ID,
+          status: 'CRITICAL',
+        })
+      ).rejects.toMatchObject({ statusCode: 400 })
+    })
+
+    it('recusa internação de outra clínica', async () => {
+      const patient = await createPatient()
+      const hospitalization = await admit(patient.id)
+
+      await expect(
+        updateStatusUseCase.execute({
+          hospitalizationId: hospitalization.id,
+          clinicId: OTHER_CLINIC_ID,
+          status: 'CRITICAL',
         })
       ).rejects.toMatchObject({ statusCode: 404 })
     })

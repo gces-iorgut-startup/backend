@@ -43,6 +43,22 @@ describe('Hospitalization routes (EVO-05)', () => {
       expect(response.statusCode).toBe(HTTP.UNAUTHORIZED)
     })
 
+    // Internação é prontuário da clínica: o tutor não pode nem ler. A primeira
+    // versão deste módulo aplicava verifyRole só na escrita, e o TUTOR recebia
+    // 200 aqui com nome do paciente e evoluções no corpo.
+    it('recusa perfil TUTOR na leitura do painel com 403', async () => {
+      prismaMock.hospitalization.findMany.mockResolvedValue([
+        Factory.hospitalization(),
+      ] as never)
+
+      const response = await app.injectAuth(
+        { method: 'GET', url: `${BASE}/active` },
+        { role: ROLE.TUTOR, userId: SEED.TUTOR_USER_ID },
+      )
+
+      expect(response.statusCode).toBe(HTTP.FORBIDDEN)
+    })
+
     // Esta é a razão de existir o preHandler de escopo: o :clinicId do path é
     // escolhido por quem chama e não autoriza nada por si.
     it('recusa clínica diferente da do token com 403', async () => {
@@ -178,6 +194,19 @@ describe('Hospitalization routes (EVO-05)', () => {
 
       expect(response.statusCode).toBe(HTTP.NOT_FOUND)
     })
+
+    it('recusa perfil TUTOR na leitura dos detalhes com 403', async () => {
+      prismaMock.hospitalization.findFirst.mockResolvedValue(
+        Factory.hospitalization() as never,
+      )
+
+      const response = await app.injectAuth(
+        { method: 'GET', url: `${BASE}/${SEED.HOSPITALIZATION_ID}` },
+        { role: ROLE.TUTOR, userId: SEED.TUTOR_USER_ID },
+      )
+
+      expect(response.statusCode).toBe(HTTP.FORBIDDEN)
+    })
   })
 
   describe('POST /clinics/:clinicId/hospitalizations/:id/evolutions', () => {
@@ -230,12 +259,75 @@ describe('Hospitalization routes (EVO-05)', () => {
     })
   })
 
+  describe('PATCH /clinics/:clinicId/hospitalizations/:id/status', () => {
+    it('marca a internação como CRITICAL', async () => {
+      prismaMock.hospitalization.findFirst.mockResolvedValue(
+        Factory.hospitalization() as never,
+      )
+      prismaMock.hospitalization.updateMany.mockResolvedValue({ count: 1 } as never)
+      prismaMock.hospitalization.findUniqueOrThrow.mockResolvedValue(
+        Factory.hospitalization({ status: 'CRITICAL' }) as never,
+      )
+
+      const response = await app.injectAuth({
+        method: 'PATCH',
+        url: `${BASE}/${SEED.HOSPITALIZATION_ID}/status`,
+        payload: { status: 'CRITICAL' },
+      })
+
+      expect(response.statusCode).toBe(HTTP.OK)
+      expect(response.json().status).toBe('CRITICAL')
+    })
+
+    it('recusa DISCHARGED nesta rota', async () => {
+      // Alta tem rota própria, porque grava data e orientações.
+      const response = await app.injectAuth({
+        method: 'PATCH',
+        url: `${BASE}/${SEED.HOSPITALIZATION_ID}/status`,
+        payload: { status: 'DISCHARGED' },
+      })
+
+      expect(response.statusCode).toBe(HTTP.UNPROCESSABLE)
+    })
+
+    it('recusa troca de status em internação com alta concedida', async () => {
+      prismaMock.hospitalization.findFirst.mockResolvedValue(
+        Factory.hospitalization({ status: 'DISCHARGED' }) as never,
+      )
+      prismaMock.hospitalization.updateMany.mockResolvedValue({ count: 0 } as never)
+
+      const response = await app.injectAuth({
+        method: 'PATCH',
+        url: `${BASE}/${SEED.HOSPITALIZATION_ID}/status`,
+        payload: { status: 'CRITICAL' },
+      })
+
+      expect(response.statusCode).toBe(HTTP.BAD_REQUEST)
+    })
+
+    it('recusa perfil TUTOR com 403', async () => {
+      const response = await app.injectAuth(
+        {
+          method: 'PATCH',
+          url: `${BASE}/${SEED.HOSPITALIZATION_ID}/status`,
+          payload: { status: 'CRITICAL' },
+        },
+        { role: ROLE.TUTOR, userId: SEED.TUTOR_USER_ID },
+      )
+
+      expect(response.statusCode).toBe(HTTP.FORBIDDEN)
+    })
+  })
+
   describe('PATCH /clinics/:clinicId/hospitalizations/:id/discharge', () => {
     it('concede a alta', async () => {
       prismaMock.hospitalization.findFirst.mockResolvedValue(
         Factory.hospitalization() as never,
       )
-      prismaMock.hospitalization.update.mockResolvedValue(
+      // A alta agora é `updateMany` com o status no where (a condição é
+      // avaliada pelo banco), seguido da releitura do registro.
+      prismaMock.hospitalization.updateMany.mockResolvedValue({ count: 1 } as never)
+      prismaMock.hospitalization.findUniqueOrThrow.mockResolvedValue(
         Factory.hospitalization({
           status: 'DISCHARGED',
           dischargedAt: new Date('2026-11-13T18:00:00.000Z'),
@@ -258,6 +350,7 @@ describe('Hospitalization routes (EVO-05)', () => {
       prismaMock.hospitalization.findFirst.mockResolvedValue(
         Factory.hospitalization({ status: 'DISCHARGED' }) as never,
       )
+      prismaMock.hospitalization.updateMany.mockResolvedValue({ count: 0 } as never)
 
       const response = await app.injectAuth({
         method: 'PATCH',
