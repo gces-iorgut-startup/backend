@@ -68,6 +68,7 @@ export class Factory {
       email: 'tutor.contato@iougurt.com',
       address: 'Rua Tutor, 200',
       insurance: null,
+      alternateContacts: null,
       createdAt: NOW,
       updatedAt: NOW,
       ...overrides,
@@ -128,6 +129,7 @@ export class Factory {
       prescriptions: null,
       breathingNotes: null,
       routineGuidance: null,
+      observations: null,
       aiSummary: null,
       finalized: false,
       createdAt: NOW,
@@ -157,7 +159,35 @@ export class Factory {
       fileName: 'hemograma.pdf',
       fileUrl: '/uploads/hemograma.pdf',
       fileType: 'pdf',
+      clinicalType: null,
       uploadedAt: NOW,
+      ...overrides,
+    }
+  }
+
+  static patientPhoto(overrides: Overrides<Record<string, unknown>> = {}) {
+    return {
+      id: 'photo-1',
+      patientId: SEED.PATIENT_ID,
+      photoUrl: '/uploads/foto.png',
+      description: 'Lesão na pata direita',
+      takenAt: NOW,
+      createdAt: NOW,
+      ...overrides,
+    }
+  }
+
+  static chronicCondition(overrides: Overrides<Record<string, unknown>> = {}) {
+    return {
+      id: SEED.CHRONIC_CONDITION_ID,
+      patientId: SEED.PATIENT_ID,
+      name: 'Diabetes mellitus',
+      diagnosedAt: NOW,
+      status: 'ACTIVE',
+      observations: null,
+      createdAt: NOW,
+      updatedAt: NOW,
+      ...overrides,
     }
   }
 

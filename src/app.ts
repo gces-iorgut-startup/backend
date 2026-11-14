@@ -4,9 +4,8 @@ import fastifyJwt from '@fastify/jwt'
 import fastifyCookie from '@fastify/cookie'
 import fastifyMultipart from '@fastify/multipart'
 import fastifyStatic from '@fastify/static'
-import path from 'path'
-import { fileURLToPath } from 'url'
 import { env } from './config/env'
+import { UPLOADS_DIR, shouldServeInline } from './config/uploads'
 import { prisma } from './config/prisma'
 import { errorHandler } from './shared/middleware/error-handler'
 import { authRoutes } from './modules/auth/infra/http/authRoutes'
@@ -17,6 +16,8 @@ import { appointmentRoutes } from './modules/schedule/infra/http/appointmentRout
 import { clinicalRoutes } from './modules/clinical/infra/http/clinicalRoutes'
 import { vaccinationRoutes } from './modules/clinical/infra/http/vaccinationRoutes'
 import { examRoutes } from './modules/clinical/infra/http/examRoutes'
+import { chronicConditionRoutes } from './modules/clinical/infra/http/chronicConditionRoutes'
+import { photoRoutes } from './modules/clinical/infra/http/photoRoutes'
 import { dashboardRoutes } from './modules/dashboard/infra/http/dashboardRoutes'
 import { portalRoutes } from './modules/portal/infra/http/portalRoutes'
 import { testRoutes } from './modules/test/infra/http/testRoutes'
@@ -85,23 +86,25 @@ export function createApp() {
   app.register(fastifyJwt, {
     secret: env.JWT_SECRET,
     sign: { expiresIn: env.JWT_EXPIRES_IN },
-    cookie: { cookieName: 'refreshToken', signed: false },
+    cookie: { cookieName: 'accessToken', signed: false },
   })
 
   app.register(fastifyCookie)
-
-  const __filename = fileURLToPath(import.meta.url)
-  const __dirname = path.dirname(__filename)
 
   app.register(fastifyMultipart, {
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   })
 
   app.register(fastifyStatic, {
-    root: path.join(__dirname, '..', 'uploads'),
+    root: UPLOADS_DIR,
     prefix: '/uploads/',
-    setHeaders(res) {
-      res.header('Content-Disposition', 'attachment')
+    setHeaders(reply, filePath) {
+      // Sem este if, toda imagem era devolvida como anexo e o navegador baixava
+      // o arquivo em vez de exibir — o que inviabiliza galeria de fotos (CLI-05)
+      // e a pré-visualização de exames de imagem (CLI-03).
+      if (!shouldServeInline(filePath)) {
+        reply.header('Content-Disposition', 'attachment')
+      }
     },
   })
 
@@ -144,6 +147,8 @@ export function createApp() {
   app.register(clinicalRoutes, { prefix: '/clinical-records' })
   app.register(vaccinationRoutes, { prefix: '/vaccinations' })
   app.register(examRoutes, { prefix: '/exams' })
+  app.register(chronicConditionRoutes, { prefix: '/chronic-conditions' })
+  app.register(photoRoutes, { prefix: '/patient-photos' })
   app.register(dashboardRoutes, { prefix: '/dashboard' })
   app.register(portalRoutes, { prefix: '/portal' })
   app.register(testRoutes, { prefix: '/test' })

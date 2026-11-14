@@ -181,14 +181,16 @@ VaccinationStatus:   UP_TO_DATE | PENDING | OVERDUE
   → Valida email + senha (bcrypt compare)
   → Gera access token JWT (30min)
   → Gera refresh token (7 dias, salvo no banco)
-  → Retorna JWT no body + refreshToken no cookie HttpOnly
+  → Web (header X-Client: web): cookies HttpOnly accessToken, refreshToken e csrfToken;
+    o body traz só { user, csrfToken }
+  → Mobile (sem X-Client): { user, accessToken, refreshToken } no body, sem cookies
 ```
 
 ### Fluxo de Renovação
 
 ```
 [POST /auth/refresh]
-  → Lê o cookie refreshToken
+  → Web: lê o cookie refreshToken (exige header X-CSRF-Token); mobile: lê do body
   → Valida no banco (existe e não expirou)
   → Gera novos tokens
 ```
@@ -694,7 +696,10 @@ Fastify é 2-3x mais rápido, tem suporte nativo a JSON Schema e integra perfeit
 Para os **use cases**, repositórios in-memory permitem testar regras de negócio puras sem banco. Para os **testes de integração de rota**, mockamos o Prisma client com `vitest-mock-extended` — assim o app Fastify sobe inteiro, mas as queries são determinísticas. As 191 specs rodam em ~3 segundos.
 
 ### Por que Refresh Token no cookie?
-Tokens no `localStorage` são vulneráveis a XSS. O cookie `HttpOnly` não é acessível via JavaScript. O access token (curta duração, 30min) fica no body da resposta.
+Tokens no `localStorage` são vulneráveis a XSS. O cookie `HttpOnly` não é acessível via JavaScript, então o web guarda access e refresh token só em cookies (`SameSite` configurável por `COOKIE_SAME_SITE`; `Secure` em produção e sempre que `SameSite=none`).
+
+### CSRF
+Cookies são enviados automaticamente pelo navegador, então as requisições autenticadas por cookie que alteram estado (POST/PUT/PATCH/DELETE e `/auth/refresh`) exigem o header `X-CSRF-Token` igual ao cookie `csrfToken` (double-submit com token assinado por HMAC). Requisições com `Authorization: Bearer` (app mobile) não usam cookie e por isso não precisam de CSRF.
 
 ### Por que senha temporária para o Tutor?
 O veterinário cadastra o email do tutor e o sistema gera 12 caracteres aleatórios seguros (`randomBytes`). A senha é retornada **uma única vez** na resposta — não é persistida em texto claro.

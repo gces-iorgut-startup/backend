@@ -19,12 +19,16 @@ export const ROLE = {
 } as const
 
 export const APPOINTMENT = {
-  CATEGORIES: ['VACCINATION', 'OBSERVATION', 'EXAM', 'SURGICAL'] as const,
+  CATEGORIES: ['GENERAL', 'RETURN', 'SURGICAL_EVALUATION', 'VACCINATION', 'OBSERVATION', 'EXAM', 'SURGICAL'] as const,
   STATUSES: ['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'PENDING_APPROVAL', 'REJECTED'] as const,
 }
 
 export const VACCINATION = {
   STATUSES: ['UP_TO_DATE', 'PENDING', 'OVERDUE'] as const,
+}
+
+export const CHRONIC_CONDITION = {
+  STATUSES: ['ACTIVE', 'INACTIVE', 'RESOLVED'] as const,
 }
 
 export const SEED = {
@@ -38,6 +42,7 @@ export const SEED = {
   RECORD_ID: '88888888-8888-4888-8888-888888888888',
   VACCINATION_ID: '99999999-9999-4999-8999-999999999999',
   EXAM_ID: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  CHRONIC_CONDITION_ID: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
 } as const
 
 export const FAKE = {
