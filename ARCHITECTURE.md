@@ -81,7 +81,8 @@ src/
     ├── schedule/
     ├── clinical/
     ├── dashboard/
-    └── portal/
+    ├── portal/
+    └── budget/
 ```
 
 ### Camadas dentro de cada módulo
@@ -149,6 +150,10 @@ Patient ───── ClinicalRecord  (1:N)
 Patient ───── Vaccination     (1:N)
 Patient ───── ExamFile        (1:N)
 ClinicalRecord ── ExamFile    (1:N opcional)
+Clinic ────── Budget          (1:N)
+Patient ───── Budget          (1:N)
+Tutor ─────── Budget          (1:N)
+Budget ────── BudgetItem      (1:N, onDelete: Cascade)
 ```
 
 ### Modelo físico (DDL)
@@ -168,6 +173,7 @@ Role:                OWNER | VET | TUTOR
 AppointmentStatus:   SCHEDULED | IN_PROGRESS | COMPLETED | CANCELLED
 AppointmentCategory: VACCINATION | OBSERVATION | EXAM | SURGICAL
 VaccinationStatus:   UP_TO_DATE | PENDING | OVERDUE
+BudgetStatus:        DRAFT | PENDING | APPROVED | REJECTED | EXPIRED
 ```
 
 ---
@@ -254,6 +260,18 @@ request.user.role
 | `GET` | `/appointments` | Listar agendamentos do dia | 🔒 |
 | `DELETE` | `/appointments/:id` | Cancelar (requer justificativa) | 🔒 |
 | `PATCH` | `/appointments/:id/reschedule` | Reagendar (requer data futura) | 🔒 |
+
+#### Orçamentos (`/clinics/:clinicId/budgets`) — `OWNER` e `VET`
+O `:clinicId` da URL deve ser o da clínica do token (senão `403`). Valores monetários (`subtotal`, `totalAmount`) são calculados só no backend, com arredondamento a 2 casas: `totalAmount = soma(itens) - discount`, com `0 <= discount <= soma(itens)`.
+
+| Método | Rota | Descrição | Auth |
+|---|---|---|---|
+| `POST` | `/clinics/:clinicId/budgets` | Criar orçamento com itens (`DRAFT` ou `PENDING`) | 🔒 |
+| `GET` | `/clinics/:clinicId/budgets` | Listar paginado (`page`, `limit`) com filtros opcionais `status`, `search` (nome do paciente ou tutor, ≥2 caracteres), `patientId`, `from`/`to` (intervalo sobre a data de emissão, inclusivo) | 🔒 |
+| `GET` | `/clinics/:clinicId/budgets/:id` | Detalhes com itens, paciente e tutor | 🔒 |
+| `PATCH` | `/clinics/:clinicId/budgets/:id/status` | Alterar status (bloqueado após `APPROVED`: `409`) | 🔒 |
+
+Transições permitidas: `DRAFT → PENDING/EXPIRED`, `PENDING → APPROVED/REJECTED/EXPIRED`. `APPROVED`, `REJECTED` e `EXPIRED` são terminais; nenhum status volta a `DRAFT`.
 
 ---
 
