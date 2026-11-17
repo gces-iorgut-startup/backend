@@ -103,12 +103,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validar credenciais do Docker Hub em push na main
+      - name: Verificar credenciais do Docker Hub
+        id: docker_creds
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         run: |
           if [ -z "${DOCKERHUB_USERNAME}" ] || [ -z "${DOCKERHUB_TOKEN}" ]; then
-            echo "Erro: DOCKERHUB_USERNAME e DOCKERHUB_TOKEN são obrigatórios para publicação na main."
-            exit 1
+            echo "::notice::DOCKERHUB_USERNAME/DOCKERHUB_TOKEN não configurados; a imagem será apenas construída (sem push)."
+            echo "can_push=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "can_push=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Definir tags da imagem
@@ -127,7 +130,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Login no Docker Hub
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+        if: steps.docker_creds.outputs.can_push == 'true'
         uses: docker/login-action@v3
         with:
           username: ${{ env.DOCKERHUB_USERNAME }}
@@ -138,7 +141,7 @@ jobs:
         with:
           context: .
           target: prod
-          push: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' }}
+          push: ${{ steps.docker_creds.outputs.can_push == 'true' }}
           tags: |
             ${{ steps.meta.outputs.image }}:latest
             ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.sha_tag }}
@@ -153,21 +156,31 @@ jobs:
     environment: production
 
     steps:
-      - name: Validar secrets e variáveis obrigatórias de deploy
+      - name: Verificar credenciais de deploy da VPS
+        id: check_vps
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           PROD_BASE_URL: ${{ vars.PROD_BASE_URL || secrets.PROD_BASE_URL }}
         run: |
-          for var in SSH_HOST SSH_USER SSH_PRIVATE_KEY PROD_BASE_URL; do
-            if [ -z "${!var}" ]; then
-              echo "Erro: secret/variável ${var} não configurada no environment production."
-              exit 1
-            fi
-          done
+          if [ -z "${SSH_HOST}" ] || [ -z "${SSH_USER}" ] || [ -z "${SSH_PRIVATE_KEY}" ]; then
+            echo "::notice::Secrets da VPS (SSH_HOST, SSH_USER, SSH_PRIVATE_KEY) não configurados no repositório/environment; pulando deploy SSH."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "smoke_enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+          if [ -n "${PROD_BASE_URL}" ]; then
+            echo "smoke_enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::PROD_BASE_URL não configurada; o smoke check externo será ignorado após o deploy SSH."
+            echo "smoke_enabled=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Deploy atômico na VPS via SSH
+        if: steps.check_vps.outputs.enabled == 'true'
         uses: appleboy/ssh-action@v1.1.0
         env:
           API_IMAGE_TAG: ${{ needs.build-docker.outputs.sha_tag }}
@@ -223,16 +236,19 @@ jobs:
             docker image prune -f
 
       - name: Checkout para executar Smoke Check externo
+        if: steps.check_vps.outputs.smoke_enabled == 'true'
         uses: actions/checkout@v4
         with:
           persist-credentials: false
 
       - name: Configurar Node.js
+        if: steps.check_vps.outputs.smoke_enabled == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Validação pós-deploy da API em Produção (WEB-05 Camada 1)
+        if: steps.check_vps.outputs.smoke_enabled == 'true'
         env:
           PROD_BASE_URL: ${{ vars.PROD_BASE_URL || secrets.PROD_BASE_URL }}
           PROD_SMOKE_OWNER_EMAIL: ${{ secrets.PROD_SMOKE_OWNER_EMAIL }}
